@@ -1,142 +1,92 @@
-# EtherProxy for NiceHash and Ethereum mining pools
+# Proxy Refactor
 
-This is an Ethereum mining proxy with simple web interface.
 
-- [Features](#features)
-- [Building on Linux](#buildingonlinux)
-- [Building on Windows](#buildingonwindows)
-- [Building on Mac OS X](#buildingonmacosx)
-- [Configuration](#configuration)
-- [Example upstream section](#exampleupstream)
-- [Running](#running)
-- [Connecting and mining with ethminer to the proxy](#connectingandmining)
-- [JSON API stats](#jsonapistats)
-- [Pools that work with this proxy](#supportedpools)
-- [TODO](#todo)
-- [Acknowledgements](#acknowledgements)
-- [License](#license)
 
-![Demo](https://raw.githubusercontent.com/sammy007/ether-proxy/master/proxy.png)
+## Getting started
 
-### <a name="features"></a> Features
+To make it easy for you to get started with GitLab, here's a list of recommended next steps.
 
-* Increases efficiency and profitability by aggregating work from several miners on a single connection to the pool.
-* Simple web interface with statistics.
-* Rigs availability monitoring.
-* Keep track of accepts, rejects, blocks stats.
-* Easy detection of sick rigs.
-* Daemon failover list.
-* JSON stats output.
+Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
-### <a name="buildingonlinux"></a> Building on Linux
+## Add your files
 
-Dependencies:
+- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
+- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
 
-* go >= 1.4
-* geth
-
-Export GOPATH:
-
-export GOPATH=$HOME/go
-
-Install required packages:
-
-go get github.com/ethereum/ethash
-go get github.com/ethereum/go-ethereum/common
-go get github.com/goji/httpauth
-go get github.com/gorilla/mux
-go get github.com/yvasiyarov/gorelic
-
-Compile:
-
-go build -o ether-proxy main.go
-
-### <a name="buildingonwindows"></a> Building on Windows
-
-Follow [this wiki paragraph](https://github.com/ethereum/go-ethereum/wiki/Installation-instructions-for-Windows#building-from-source) in order to prepare your environment.
-Install required packages (look at Linux install guide above). Then compile:
-
-go build -o ether-proxy.exe main.go
-
-### <a name="buildingonmacosx"></a> Building on Mac OS X
-
-If you didn't install [Brew](http://brew.sh/), do it. Then install Golang:
-
-brew install go
-
-And follow Linux installation instructions because they are the same for OS X.
-
-### <a name="configuration"></a> Configuration
-
-Configuration is self-describing, just copy *config.example.json* to *config.json* and specify endpoint URL and upstream URLs.
-
-#### <a name="exampleupstream"></a> Example upstream section
-
-```javascript
-"upstream": [
-{
-"pool": true,
-"name": "NiceHash as primary pool",
-"url": "http://ethereum.eu.nicehash.com:3500/n1c3-1CzrFvvieNaZg5aMHkb8eAPCSeVVUfUpax.myproxy/250",
-"timeout": "10s"
-},
-{
-"pool": true,
-"name": "suprnova.cc as secondary pool",
-"url": "http://eth-mine.suprnova.cc:3000/myusername.myproxy/250",
-"timeout": "10s"
-},
-{
-"name": "local geth wallet as backup",
-"url": "http://127.0.0.1:8545",
-"timeout": "10s"
-}
-],
+```
+cd existing_repo
+git remote add origin https://gitlab.com/TitanInd/proxy/proxy-refactor.git
+git branch -M main
+git push -uf origin main
 ```
 
-In this example we specified [NiceHash](https://www.nicehash.com) mining pool as main primary mining target. Additionally we specified [suprnova.cc](https://eth.suprnova.cc) and a local geth node as backup.
+## Integrate with your tools
 
-With <code>"submitHashrate": true|false</code> proxy will forward <code>eth_submitHashrate</code> requests to upstream.
+- [ ] [Set up project integrations](https://gitlab.com/TitanInd/proxy/proxy-refactor/-/settings/integrations)
 
-#### <a name="running"></a> Running
+## Collaborate with your team
 
-./ether-proxy config.json
+- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
+- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
+- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
+- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
+- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
 
-#### <a name="connectingandmining"></a> Connecting and mining with ethminer to the proxy
+## Test and Deploy
 
-The syntax is:
+Use the built-in continuous integration in GitLab.
 
-ethminer -G -F http://x.x.x.x:8546/miner/N/X
+- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
+- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
+- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
+- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
+- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
 
-where N = desired difficulty (approximately expected rig hashrate, divided by 2) and X is the name of the rig.
+***
 
-Examples for one AMD and one NVIDIA rig with multiple GPUs:
+# Editing this README
 
-ethminer -G -F http://x.x.x.x:8546/miner/50/myamdrig
-ethminer -U -F http://x.x.x.x:8546/miner/30/mynvidiarig
+When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
 
-### <a name="jsonapistats"></a> JSON API stats
+## Suggestions for a good README
+Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
 
-Point your browser to the stats page according to "frontend" settings in config.json:
+## Name
+Choose a self-explaining name for your project.
 
-http://x.x.x.x:8080/stats
+## Description
+Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
 
-### <a name="supportedpools"></a> Pools that work with this proxy
+## Badges
+On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
 
-* [NiceHash](https://www.nicehash.com) Ethereum pool with auto-convert to Bitcoin
-* [suprnova.cc](https://eth.suprnova.cc) Ethereum pool
+## Visuals
+Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
 
-### <a name="todo"></a> TODO
+## Installation
+Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-* Report block numbers
-* Report luck per rig
-* Maybe add more stats
-* Maybe add charts
+## Usage
+Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-### <a name="acknowledgements"></a> Acknowledgements
+## Support
+Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
 
-Forked from [sammy007's ethere-proxy](https://github.com/sammy007/ether-proxy), all credits goes to sammy007.
+## Roadmap
+If you have ideas for releases in the future, it is a good idea to list them in the README.
 
-### <a name="license"></a> License
+## Contributing
+State if you are open to contributions and what your requirements are for accepting them.
 
-The MIT License (MIT).
+For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+
+You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+
+## Authors and acknowledgment
+Show your appreciation to those who have contributed to the project.
+
+## License
+For open source projects, say how it is licensed.
+
+## Project status
+If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
