@@ -1,4 +1,4 @@
-module kiloproxy
+module btcminerproxy
 
 go 1.20
 

@@ -1,6 +1,6 @@
 /*
- * Kiloproxy is a high-performance Cryptonote Stratum mining proxy.
- * Copyright (C) 2023 Kilopool.com
+ * BtcMinerProxy is a high-performance Cryptonote Stratum mining proxy.
+ * Copyright (C) 2023 Venusgalstar
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,9 @@
 package stratumserver
 
 import (
+	"btcminerproxy/config"
+	"btcminerproxy/kilolog"
+	"btcminerproxy/mutex"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
@@ -30,9 +33,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"kiloproxy/config"
-	"kiloproxy/kilolog"
-	"kiloproxy/mutex"
 	"math/big"
 	"net"
 	"os"

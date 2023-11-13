@@ -1,6 +1,6 @@
 /*
- * Kiloproxy is a high-performance Cryptonote Stratum mining proxy.
- * Copyright (C) 2023 Kilopool.com
+ * BtcMinerProxy is a high-performance Cryptonote Stratum mining proxy.
+ * Copyright (C) 2023 Venusgalstar
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,17 +19,18 @@
 package main
 
 import (
+	"btcminerproxy/config"
+	"btcminerproxy/kilolog"
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"kiloproxy/config"
-	"kiloproxy/kilolog"
-	"kiloproxy/stats"
 	"os"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+
+	"btcminerproxy/stats"
 )
 
 func main() {
@@ -74,7 +75,7 @@ func main() {
 		}
 
 		kilolog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
-			"VERSION      "+colCyan+"Kiloproxy"+colWhite+" v"+config.VERSION.ToString())
+			"VERSION      "+colCyan+"BtcMinerProxy"+colWhite+" v"+config.VERSION.ToString())
 		kilolog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
 			"CREDITS      "+colCyan+"Developed by "+colWhite+"Kilopool.com"+colCyan+".")
 		kilolog.Printf("%s * %s%s\n", bold+colGreen, colWhite,

@@ -1,9 +1,9 @@
 package main
 
 import (
+	"btcminerproxy/config"
+	"btcminerproxy/dash"
 	"fmt"
-	"kiloproxy/config"
-	"kiloproxy/dash"
 	"math"
 	"time"
 
