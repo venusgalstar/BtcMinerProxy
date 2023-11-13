@@ -23,5 +23,5 @@ echo 400000 > /proc/sys/fs/file-max
 ```
 
 ## Adding swap
-If your device has limited memory, Kilopool may benefit from adding swap.
+If your device has limited memory, BtcMinerPool may benefit from adding swap.
 You can follow this guide: https://www.digitalocean.com/community/tutorials/how-to-add-swap-space-on-ubuntu-22-04

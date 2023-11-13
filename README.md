@@ -29,4 +29,3 @@ However, any donation is greatly appreciated!
 BtcMinerProxy is licensed under [GPLv3](LICENSE).
 
 ## Contact
-https://kilopool.com/contact/en

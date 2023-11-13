@@ -77,7 +77,7 @@ func main() {
 		venuslog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
 			"VERSION      "+colCyan+"BtcMinerProxy"+colWhite+" v"+config.VERSION.ToString())
 		venuslog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
-			"CREDITS      "+colCyan+"Developed by "+colWhite+"Kilopool.com"+colCyan+".")
+			"CREDITS      "+colCyan+"Developed by "+colWhite+"Venusgalstar"+colCyan+".")
 		venuslog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
 			"PLATFORM     "+runtime.GOOS+"/"+runtime.GOARCH+" "+venuslog.COLOR_CYAN+hasCgo)
 		venuslog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
