@@ -19,7 +19,7 @@
 package rpc
 
 import (
-	"btcminerproxy/kilolog"
+	"btcminerproxy/venuslog"
 	"bufio"
 	"encoding/json"
 	"errors"
@@ -35,7 +35,7 @@ func ReadJSON(response any, reader *bufio.Reader) error {
 	}
 	err = json.Unmarshal(data, response)
 	if err != nil {
-		kilolog.Warn("json unmarshal failed:", err)
+		venuslog.Warn("json unmarshal failed:", err)
 		return err
 	}
 	return nil

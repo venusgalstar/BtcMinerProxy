@@ -21,9 +21,9 @@ package stratumclient
 
 import (
 	"btcminerproxy/config"
-	"btcminerproxy/kilolog"
 	"btcminerproxy/mutex"
 	"btcminerproxy/stratum/rpc"
+	"btcminerproxy/venuslog"
 	"bufio"
 	"crypto/sha256"
 	"crypto/tls"
@@ -80,17 +80,17 @@ func (cl *Client) Connect(
 				computedFingerprintStr := hex.EncodeToString(computedFingerprint[:])
 
 				if tlsFingerprint == "" {
-					kilolog.Info("Pool fingerprint", computedFingerprintStr)
+					venuslog.Info("Pool fingerprint", computedFingerprintStr)
 					return nil
 				}
 
 				if len(rawCerts) != 1 {
-					kilolog.Err("invalid number of certificates")
+					venuslog.Err("invalid number of certificates")
 					return errors.New("invalid number of certificates")
 				}
 
 				if computedFingerprintStr != tlsFingerprint {
-					kilolog.Err("invalid pool TLS fingerprint:", computedFingerprintStr, "expected", tlsFingerprint)
+					venuslog.Err("invalid pool TLS fingerprint:", computedFingerprintStr, "expected", tlsFingerprint)
 					return errors.New("invalid fingerprint")
 				}
 
@@ -102,7 +102,7 @@ func (cl *Client) Connect(
 	}
 
 	if err != nil {
-		kilolog.Warn("Connection failed:", err, cl)
+		venuslog.Warn("Connection failed:", err, cl)
 		return nil, err
 	}
 	// send login
@@ -126,16 +126,16 @@ func (cl *Client) Connect(
 
 	data, err := json.Marshal(loginRequest)
 	if err != nil {
-		kilolog.Debug("json marshalling failed:", err, "for client")
+		venuslog.Debug("json marshalling failed:", err, "for client")
 		return nil, err
 	}
 	cl.conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
 
-	kilolog.Debug("sending to pool:", string(data))
+	venuslog.Debug("sending to pool:", string(data))
 
 	data = append(data, '\n')
 	if _, err = cl.conn.Write(data); err != nil {
-		kilolog.Warn(err)
+		venuslog.Warn(err)
 		return nil, err
 	}
 
@@ -145,15 +145,15 @@ func (cl *Client) Connect(
 	rdr := bufio.NewReaderSize(cl.conn, config.MAX_REQUEST_SIZE)
 	err = rpc.ReadJSON(response, rdr)
 	if err != nil {
-		kilolog.Warn(err)
+		venuslog.Warn(err)
 		return nil, err
 	}
 	if response.Result == nil {
 		if response.Error != nil {
-			kilolog.Warn("client login error:", response.Error)
+			venuslog.Warn("client login error:", response.Error)
 			return nil, errors.New("stratum server error")
 		}
-		kilolog.Warn("malformed login response:", response)
+		venuslog.Warn("malformed login response:", response)
 		return nil, errors.New("malformed login response")
 	}
 
@@ -161,7 +161,7 @@ func (cl *Client) Connect(
 	cl.alive = true
 	jc := make(chan *rpc.CompleteJob)
 	if response.Result.Job == nil {
-		kilolog.Warn("malformed login response: result:", response.Result)
+		venuslog.Warn("malformed login response: result:", response.Result)
 		return nil, fmt.Errorf("malformed login response")
 	}
 
@@ -179,15 +179,15 @@ func (cl *Client) submitRequest(requestData any, expectedResponseID uint64) (*rp
 	}
 	data, err := json.Marshal(requestData)
 	if err != nil {
-		kilolog.Warn("failed to submit work:", err)
+		venuslog.Warn("failed to submit work:", err)
 		cl.mutex.Unlock()
 		return nil, err
 	}
 	cl.conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
-	kilolog.Debug("sending to pool:", string(data))
+	venuslog.Debug("sending to pool:", string(data))
 	data = append(data, '\n')
 	if _, err = cl.conn.Write(data); err != nil {
-		kilolog.Warn("failed to submit work:", err)
+		venuslog.Warn("failed to submit work:", err)
 		cl.mutex.Unlock()
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (cl *Client) submitRequest(requestData any, expectedResponseID uint64) (*rp
 		return nil, fmt.Errorf("failed to submit work: empty response")
 	}
 	if response.ID != expectedResponseID {
-		kilolog.Warn("unexpected response ID: got:", response.ID, "expected:", expectedResponseID)
+		venuslog.Warn("unexpected response ID: got:", response.ID, "expected:", expectedResponseID)
 
 		return nil, fmt.Errorf("failed to submit work: unexpected response")
 	}
@@ -251,10 +251,10 @@ func (cl *Client) dispatchJobs(conn net.Conn, jobChan chan<- *rpc.CompleteJob, f
 		err := rpc.ReadJSON(response, reader)
 		if err != nil {
 			if cl.alive {
-				kilolog.Warn("failed to read jobs from pool:", err)
+				venuslog.Warn("failed to read jobs from pool:", err)
 				break
 			} else {
-				kilolog.Debug("failed to read jobs from pool:", err)
+				venuslog.Debug("failed to read jobs from pool:", err)
 				break
 			}
 		}

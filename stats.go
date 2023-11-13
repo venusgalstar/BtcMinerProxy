@@ -20,7 +20,7 @@ package main
 
 import (
 	"btcminerproxy/config"
-	"btcminerproxy/kilolog"
+	"btcminerproxy/venuslog"
 	"strconv"
 	"time"
 )
@@ -74,8 +74,8 @@ func Stats() {
 
 	for {
 		getStats()
-		kilolog.Statsf("%s avg, miners: "+kilolog.COLOR_CYAN+"%d"+kilolog.COLOR_WHITE+", upstreams: "+kilolog.COLOR_CYAN+"%d"+kilolog.COLOR_WHITE,
-			kilolog.COLOR_CYAN+formatHashrate(avgHashrate)+"H/s"+kilolog.COLOR_WHITE,
+		venuslog.Statsf("%s avg, miners: "+venuslog.COLOR_CYAN+"%d"+venuslog.COLOR_WHITE+", upstreams: "+venuslog.COLOR_CYAN+"%d"+venuslog.COLOR_WHITE,
+			venuslog.COLOR_CYAN+formatHashrate(avgHashrate)+"H/s"+venuslog.COLOR_WHITE,
 			numMiners,
 			numUpstreams,
 		)

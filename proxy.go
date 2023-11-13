@@ -20,10 +20,10 @@ package main
 
 import (
 	"btcminerproxy/config"
-	"btcminerproxy/kilolog"
 	"btcminerproxy/stratum/rpc"
 	stratumserver "btcminerproxy/stratum/server"
 	"btcminerproxy/stratum/template"
+	"btcminerproxy/venuslog"
 	"bufio"
 	"encoding/hex"
 	"time"
@@ -56,25 +56,25 @@ func HandleConnection(conn *stratumserver.Connection) {
 	reader := bufio.NewReaderSize(conn.Conn, config.MAX_REQUEST_SIZE)
 	err := rpc.ReadJSON(&req, reader)
 	if err != nil {
-		kilolog.Debug("ReadJSON failed in server:", err)
+		venuslog.Debug("ReadJSON failed in server:", err)
 		Kick(conn.Id)
 		return
 	}
 	reqParams := req.Params
 	if reqParams.Agent == "" || reqParams.Login == "" || reqParams.Pass == "" {
-		kilolog.Debug("client sent a malformed login request")
+		venuslog.Debug("client sent a malformed login request")
 		Kick(conn.Id)
 		return
 	}
 
-	kilolog.Debug("Stratum server received connection")
-	kilolog.Debug("login", reqParams.Login)
-	kilolog.Debug("pass ", reqParams.Pass)
-	kilolog.Debug("algo ", reqParams.Algo)
-	kilolog.Debug("agent", reqParams.Agent)
+	venuslog.Debug("Stratum server received connection")
+	venuslog.Debug("login", reqParams.Login)
+	venuslog.Debug("pass ", reqParams.Pass)
+	venuslog.Debug("algo ", reqParams.Algo)
+	venuslog.Debug("agent", reqParams.Agent)
 
 	if reqParams.NicehashSupport {
-		kilolog.Debug("Client supports Nicehash mode (nicehash_support is true)")
+		venuslog.Debug("Client supports Nicehash mode (nicehash_support is true)")
 	}
 
 	// Write login response
@@ -84,7 +84,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 	jobData, clientId, upstreamId, err := GetJob(conn)
 	UpstreamsMut.Unlock()
 	if err != nil {
-		kilolog.Warn(err)
+		venuslog.Warn(err)
 		Kick(conn.Id)
 		conn.Unlock()
 		return
@@ -122,7 +122,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 		err := rpc.ReadJSON(&req, reader)
 
 		if err != nil {
-			kilolog.Debug("conn.go ReadJSON failed in server:", err)
+			venuslog.Debug("conn.go ReadJSON failed in server:", err)
 			Kick(conn.Id)
 			return
 		}
@@ -137,7 +137,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 			})
 			continue
 		} else if req.Method != "submit" {
-			kilolog.Warn("Unknown method", req.Method, ". Skipping.")
+			venuslog.Warn("Unknown method", req.Method, ". Skipping.")
 			continue
 		}
 
@@ -150,7 +150,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 		if len(Upstreams[conn.Upstream].LastJob.Target) == 16 {
 			dec, err := hex.DecodeString(Upstreams[conn.Upstream].LastJob.Target)
 			if err != nil {
-				kilolog.Err(err)
+				venuslog.Err(err)
 				Kick(conn.Id)
 				return
 			}
@@ -158,7 +158,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 		} else {
 			dec, err := hex.DecodeString(Upstreams[conn.Upstream].LastJob.Target)
 			if err != nil {
-				kilolog.Err(err)
+				venuslog.Err(err)
 				Kick(conn.Id)
 				return
 			}
@@ -173,16 +173,16 @@ func HandleConnection(conn *stratumserver.Connection) {
 		res, err := Upstreams[conn.Upstream].Stratum.SubmitWork(req.Params.Nonce, req.Params.JobID, req.Params.Result, req.ID)
 		UpstreamsMut.Unlock()
 		if err != nil {
-			kilolog.Err(err)
+			venuslog.Err(err)
 			Kick(conn.Id)
 			return
 		} else if res == nil {
-			kilolog.Err("response is nil")
+			venuslog.Err("response is nil")
 			Kick(conn.Id)
 			return
 		}
 
-		kilolog.Debug("Sending SubmitWork response to client", res)
+		venuslog.Debug("Sending SubmitWork response to client", res)
 
 		conn.Send(res)
 	}
@@ -227,12 +227,12 @@ func GetNewJob(conn *stratumserver.Connection, job rpc.CompleteJob) {
 
 	jobData, _, upstreamId, err := GetJob(conn)
 	if err != nil {
-		kilolog.Warn(err)
+		venuslog.Warn(err)
 		Kick(conn.Id)
 		return
 	}
 	if conn.Upstream != upstreamId {
-		kilolog.Debug("Upstream changed:", conn.Upstream)
+		venuslog.Debug("Upstream changed:", conn.Upstream)
 		conn.Upstream = upstreamId
 	}
 
@@ -245,6 +245,6 @@ func GetNewJob(conn *stratumserver.Connection, job rpc.CompleteJob) {
 
 	err = conn.Send(jobContent)
 	if err != nil {
-		kilolog.Err(err)
+		venuslog.Err(err)
 	}
 }

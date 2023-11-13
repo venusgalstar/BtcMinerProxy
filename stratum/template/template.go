@@ -19,7 +19,7 @@
 package template
 
 import (
-	"btcminerproxy/kilolog"
+	"btcminerproxy/venuslog"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -112,7 +112,7 @@ func HashToDiff(hash []byte) uint64 {
 // Converts 4-byte short diff to uint64 diff
 func ShortDiffToDiff(shortDiff []byte) uint64 {
 	if len(shortDiff) != 4 {
-		kilolog.Fatal("short diff length is not 4:", hex.EncodeToString(shortDiff))
+		venuslog.Fatal("short diff length is not 4:", hex.EncodeToString(shortDiff))
 	}
 	var diff = uint64(binary.LittleEndian.Uint32(shortDiff[:]))
 	if diff == 0 {
@@ -125,7 +125,7 @@ func ShortDiffToDiff(shortDiff []byte) uint64 {
 // Converts 8-byte short diff to uint64 diff
 func MidDiffToDiff(midDiff []byte) uint64 {
 	if len(midDiff) != 8 {
-		kilolog.Fatal("mid diff length is not 8:", hex.EncodeToString(midDiff))
+		venuslog.Fatal("mid diff length is not 8:", hex.EncodeToString(midDiff))
 	}
 	var diff = binary.LittleEndian.Uint64(midDiff[:])
 	if diff == 0 {

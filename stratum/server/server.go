@@ -20,8 +20,8 @@ package stratumserver
 
 import (
 	"btcminerproxy/config"
-	"btcminerproxy/kilolog"
 	"btcminerproxy/mutex"
+	"btcminerproxy/venuslog"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
@@ -148,23 +148,23 @@ func (s *Server) Start(port uint16, bind string, isTls bool) {
 		cert, err := tls.LoadX509KeyPair("./certificate.pem", "key.pem")
 
 		if err != nil {
-			kilolog.Info("Failed to load TLS certificate from file, generating a new one.")
-			kilolog.Debug(err)
+			venuslog.Info("Failed to load TLS certificate from file, generating a new one.")
+			venuslog.Debug(err)
 
 			certPem, keyPem, err := GenCertificate()
 			if err != nil {
-				kilolog.Fatal(err)
+				venuslog.Fatal(err)
 			}
 
 			cert, err = tls.X509KeyPair(certPem, keyPem)
 			if err != nil {
-				kilolog.Fatal(err)
+				venuslog.Fatal(err)
 			}
 		}
 
 		fingerprint := sha256.Sum256(cert.Certificate[0])
 
-		kilolog.Info("TLS fingerprint (SHA-256):", hex.EncodeToString(fingerprint[:]))
+		venuslog.Info("TLS fingerprint (SHA-256):", hex.EncodeToString(fingerprint[:]))
 
 		listener, err = tls.Listen("tcp", bind+":"+strconv.FormatUint(uint64(port), 10), &tls.Config{
 			Certificates: []tls.Certificate{cert},
@@ -173,10 +173,10 @@ func (s *Server) Start(port uint16, bind string, isTls bool) {
 		listener, err = net.Listen("tcp", bind+":"+strconv.FormatUint(uint64(port), 10))
 	}
 	if err != nil {
-		kilolog.Fatal(err)
+		venuslog.Fatal(err)
 	}
 
-	kilolog.Info("Stratum server listening on", fmt.Sprintf("%s:%d", bind, port))
+	venuslog.Info("Stratum server listening on", fmt.Sprintf("%s:%d", bind, port))
 
 	for {
 		c, err := listener.Accept()
@@ -185,7 +185,7 @@ func (s *Server) Start(port uint16, bind string, isTls bool) {
 			continue
 		}
 
-		kilolog.Info("New incoming connection:", c.RemoteAddr().String())
+		venuslog.Info("New incoming connection:", c.RemoteAddr().String())
 
 		conn := &Connection{
 			Conn: c,

@@ -20,7 +20,7 @@ package main
 
 import (
 	"btcminerproxy/config"
-	"btcminerproxy/kilolog"
+	"btcminerproxy/venuslog"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -36,15 +36,15 @@ import (
 func main() {
 	err := loadConfig()
 	if err != nil {
-		kilolog.Info(fmt.Sprintf("Failed to read config.json (%s), running configurator", err))
+		venuslog.Info(fmt.Sprintf("Failed to read config.json (%s), running configurator", err))
 		configurator()
 	}
 	err = config.CFG.Validate()
 	if err != nil {
-		kilolog.Fatal(err)
+		venuslog.Fatal(err)
 	}
 
-	kilolog.StartLogger()
+	venuslog.StartLogger()
 
 	threads := runtime.GOMAXPROCS(0)
 	if threads > config.CFG.MaxConcurrency {
@@ -55,18 +55,18 @@ func main() {
 	go StartDashboard()
 
 	if config.CFG.Title {
-		colCyan := kilolog.COLOR_CYAN
-		colGreen := kilolog.COLOR_GREEN
-		colWhite := kilolog.COLOR_WHITE
-		bold := kilolog.BOLD
+		colCyan := venuslog.COLOR_CYAN
+		colGreen := venuslog.COLOR_GREEN
+		colWhite := venuslog.COLOR_WHITE
+		bold := venuslog.BOLD
 
 		numThreads := strconv.FormatInt(int64(threads), 10)
-		threadsCol := kilolog.COLOR_GREEN
+		threadsCol := venuslog.COLOR_GREEN
 
 		if numThreads == "2" {
-			threadsCol = kilolog.COLOR_YELLOW
+			threadsCol = venuslog.COLOR_YELLOW
 		} else if numThreads == "1" {
-			threadsCol = kilolog.COLOR_RED
+			threadsCol = venuslog.COLOR_RED
 		}
 
 		hasCgo := "cgo"
@@ -74,13 +74,13 @@ func main() {
 			hasCgo = ""
 		}
 
-		kilolog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
+		venuslog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
 			"VERSION      "+colCyan+"BtcMinerProxy"+colWhite+" v"+config.VERSION.ToString())
-		kilolog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
+		venuslog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
 			"CREDITS      "+colCyan+"Developed by "+colWhite+"Kilopool.com"+colCyan+".")
-		kilolog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
-			"PLATFORM     "+runtime.GOOS+"/"+runtime.GOARCH+" "+kilolog.COLOR_CYAN+hasCgo)
-		kilolog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
+		venuslog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
+			"PLATFORM     "+runtime.GOOS+"/"+runtime.GOARCH+" "+venuslog.COLOR_CYAN+hasCgo)
+		venuslog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
 			"CONCURRENCY  "+threadsCol+numThreads+colWhite+" threads")
 
 		for i, v := range config.CFG.Pools {
@@ -89,17 +89,17 @@ func main() {
 				col = colGreen
 			}
 
-			kilolog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
-				fmt.Sprintf("POOL #%d      %s", i, col+v.Url+kilolog.COLOR_RESET))
+			venuslog.Printf("%s * %s%s\n", bold+colGreen, colWhite,
+				fmt.Sprintf("POOL #%d      %s", i, col+v.Url+venuslog.COLOR_RESET))
 		}
 
 	}
 
 	if config.CFG.Dashboard.Enabled {
-		kilolog.Info(fmt.Sprintf("Dashboard is available at http://127.0.0.1:%d", config.CFG.Dashboard.Port))
+		venuslog.Info(fmt.Sprintf("Dashboard is available at http://127.0.0.1:%d", config.CFG.Dashboard.Port))
 	}
 
-	kilolog.Info("Using pool", config.CFG.Pools[0].Url)
+	venuslog.Info("Using pool", config.CFG.Pools[0].Url)
 
 	go Stats()
 
@@ -121,12 +121,12 @@ var zephRegexp = regexp.MustCompile("^ZEPH[1-9A-HJ-NP-Za-km-z]+$")
 
 func configurator() {
 	userAddr := prompt("Enter your wallet address: ")
-	kilolog.Info(userAddr)
+	venuslog.Info(userAddr)
 
 	addr := []byte(userAddr)
 
 	if !wordRegexp.Match([]byte(addr)) {
-		kilolog.Fatal("Invalid address", addr)
+		venuslog.Fatal("Invalid address", addr)
 	}
 	curcfg := strings.ReplaceAll(string(config.DefaultConfig), "YOUR_WALLET_ADDRESS", userAddr)
 
@@ -144,7 +144,7 @@ func configurator() {
 	os.WriteFile("./config.json", []byte(curcfg), 0o666)
 	err := json.Unmarshal([]byte(curcfg), &config.CFG)
 	if err != nil {
-		kilolog.Fatal(err)
+		venuslog.Fatal(err)
 	}
 }
 

@@ -20,11 +20,11 @@ package main
 
 import (
 	"btcminerproxy/config"
-	"btcminerproxy/kilolog"
 	"btcminerproxy/mutex"
 	stratumclient "btcminerproxy/stratum/client"
 	"btcminerproxy/stratum/rpc"
 	stratumserver "btcminerproxy/stratum/server"
+	"btcminerproxy/venuslog"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -60,7 +60,7 @@ func GetJob(conn *stratumserver.Connection) (rpc.CompleteJob, string, uint64, er
 		nicehash = Upstreams[conn.Upstream].TopNicehash + 1
 		Upstreams[LatestUpstream].TopNicehash++
 	} else if len(Upstreams) == 0 || Upstreams[LatestUpstream].TopNicehash == 0xff {
-		kilolog.Debug("New upstream connection")
+		venuslog.Debug("New upstream connection")
 
 		newId := LatestUpstream + 1
 		client := &stratumclient.Client{}
@@ -98,14 +98,14 @@ func GetJob(conn *stratumserver.Connection) (rpc.CompleteJob, string, uint64, er
 		upstreamId = newId
 		nicehash = 1
 	} else {
-		kilolog.Debug("Reusing upstream job")
+		venuslog.Debug("Reusing upstream job")
 		upstreamId = LatestUpstream
 		theJob = Upstreams[upstreamId].LastJob
 		nicehash = Upstreams[upstreamId].TopNicehash + 1
 		Upstreams[upstreamId].TopNicehash++
 		Upstreams[upstreamId].Clients = append(Upstreams[upstreamId].Clients, conn.Id)
 	}
-	kilolog.Debug("Nicehash byte is", hex.EncodeToString([]byte{nicehash}))
+	venuslog.Debug("Nicehash byte is", hex.EncodeToString([]byte{nicehash}))
 
 	blobBin, err := hex.DecodeString(theJob.Blob)
 	if err != nil {
@@ -128,9 +128,9 @@ func UpstreamHandler(us *Upstream, jobChan <-chan *rpc.CompleteJob) {
 
 		if recvJob == nil {
 			if us.Stratum.IsAlive() {
-				kilolog.Warn("recvJob is nil")
+				venuslog.Warn("recvJob is nil")
 			} else {
-				kilolog.Debug("recvJob is nil")
+				venuslog.Debug("recvJob is nil")
 			}
 			UpstreamsMut.Lock()
 			us.Close()
@@ -138,7 +138,7 @@ func UpstreamHandler(us *Upstream, jobChan <-chan *rpc.CompleteJob) {
 			return
 		}
 
-		kilolog.Debug("Received new job with Job ID", recvJob.JobID)
+		venuslog.Debug("Received new job with Job ID", recvJob.JobID)
 
 		HandleUpstreamJob(us, recvJob)
 	}
@@ -153,7 +153,7 @@ func (us *Upstream) Close() {
 
 	if LatestUpstream == us.ID {
 		if len(Upstreams) == 1 {
-			kilolog.Debug("Last upstream destroyed.")
+			venuslog.Debug("Last upstream destroyed.")
 			LatestUpstream = 0
 		}
 	}
@@ -162,26 +162,26 @@ func (us *Upstream) Close() {
 }
 
 func HandleUpstreamJob(us *Upstream, job *rpc.CompleteJob) {
-	kilolog.Debug("New job for Upstream", us.ID)
+	venuslog.Debug("New job for Upstream", us.ID)
 
 	UpstreamsMut.Lock()
 	defer UpstreamsMut.Unlock()
 
-	kilolog.Debug("New job for Upstream", us.ID, "part 2 TODO")
+	venuslog.Debug("New job for Upstream", us.ID, "part 2 TODO")
 
 	us.TopNicehash = 0
 
 	us.LastJob = *job
 
 	for _, v := range us.Clients {
-		kilolog.Debug("Sending to client", v)
+		venuslog.Debug("Sending to client", v)
 		srv.ConnsMut.Lock()
-		kilolog.Debug("Sending part 2")
+		venuslog.Debug("Sending part 2")
 
 		//innerloop:
 		for _, conn := range srv.Connections {
 			if conn.Id == v {
-				kilolog.Debug("Refreshing job for connection", conn.Id)
+				venuslog.Debug("Refreshing job for connection", conn.Id)
 				GetNewJob(conn, us.LastJob)
 				//break innerloop
 			}

@@ -36,14 +36,14 @@ type Mutex struct {
 var x int = 0*/
 
 func (m *Mutex) Lock() {
-	/*kilolog.Debug("Lock", getCaller())
+	/*venuslog.Debug("Lock", getCaller())
 	x++*/
 	m.m.Lock()
-	//kilolog.Debug("Lock successful (", x, ")")
+	//venuslog.Debug("Lock successful (", x, ")")
 }
 func (m *Mutex) Unlock() {
-	//kilolog.Debug("Unlock", getCaller())
+	//venuslog.Debug("Unlock", getCaller())
 	m.m.Unlock()
 	/*x--
-	kilolog.Debug("Unlock successful (", x, "remaining)")*/
+	venuslog.Debug("Unlock successful (", x, "remaining)")*/
 }
