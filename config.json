@@ -1,0 +1,40 @@
+{
+	"pools": [
+		{
+			"url": "eu.stratum.kilopool.com:3334",
+			"tls": true,
+			"user": "aaa",
+			"pass": "x"
+		},
+		{
+			"url": "eu.stratum.kilopool.com:3333",
+			"tls": false,
+			"user": "aaa",
+			"pass": "x"
+		}
+	],
+	"bind": [
+		{
+			"host": "0.0.0.0",
+			"port": 3333,
+			"tls": false
+		},
+		{
+			"host": "0.0.0.0",
+			"port": 3334,
+			"tls": true
+		}
+	],
+	"dashboard": {
+		"enabled": false,
+		"port": 1315,
+		"host": "0.0.0.0"
+	},
+	"print_interval": 60,
+	"interactive": true,
+	"max_concurrency": 4,
+	"colors": true,
+	"log_date": true,
+	"title": true,
+	"verbose": false
+}
