@@ -51,6 +51,18 @@ type authorizeParams struct {
 	Pass string `json:"pass"`
 }
 
+type StratumMsgResponse struct {
+	ID     uint64 `json:"id"`
+	Result any    `json:"result"`
+	Error  string `json:"error"`
+}
+
+type StratumSeverMsg struct {
+	ID     uint64 `json:"id"`
+	Method string `json:"method"`
+}
+
+// Original struct
 type Template struct {
 	Blob           []byte
 	Difficulty     uint64

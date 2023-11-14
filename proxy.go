@@ -49,38 +49,48 @@ func StartProxy() {
 }
 
 func HandleConnection(conn *stratumserver.Connection) {
-	// Read the login request
-	// Listen for subscribe
-	req := template.StratumMsg{}
-	conn.Conn.SetReadDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
-	reader := bufio.NewReaderSize(conn.Conn, config.MAX_REQUEST_SIZE)
-
-	err := rpc.ReadJSON(&req, reader)
-	if err != nil {
-		venuslog.Warn("ReadJSON failed in proxy:", err)
-		Kick(conn.Id)
-		return
-	}
-
 	for {
+		req := template.StratumMsg{}
+		conn.Conn.SetReadDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
+		reader := bufio.NewReaderSize(conn.Conn, config.MAX_REQUEST_SIZE)
+		data, isPrefix, errR := reader.ReadLine()
+
+		if errR != nil || isPrefix {
+			venuslog.Warn("ReadJSON failed in proxy:", errR)
+			Kick(conn.Id)
+			return
+		}
+
+		err := rpc.ReadJSON(&req, data)
+
+		if err != nil {
+			venuslog.Warn("ReadJSON failed in proxy:", err)
+			Kick(conn.Id)
+			return
+		}
+
 		switch req.Method {
-		case "subscribe":
+		case "mining.subscribe":
 			venuslog.Warn("Stratum proxy received subscribe from miner :", conn.Conn.RemoteAddr())
 
 			subscribeReq := template.SubscribeMsg{}
-			err := rpc.ReadJSON(&subscribeReq, reader)
+			err := rpc.ReadJSON(&subscribeReq, data)
 			if err != nil {
 				venuslog.Warn("ReadJSON failed in proxy:", err)
 				Kick(conn.Id)
 				return
 			}
 
+			venuslog.Warn("Stratum proxy tried to send")
+
 			SendSubscribe(conn, subscribeReq)
 
-		case "authorize":
+		case "mining.authorize":
 			venuslog.Warn("Stratum proxy received authorize from miner :", conn.Conn.RemoteAddr())
-		case "submit":
-			venuslog.Warn("Stratum proxy received submit from miner :", conn.Conn.RemoteAddr())
+			Upstreams[conn.Upstream].client.SendData(data)
+		default:
+			venuslog.Warn("Stratum proxy received data from miner :", conn.Conn.RemoteAddr())
+			Upstreams[conn.Upstream].client.SendData(data)
 		}
 	}
 
@@ -145,7 +155,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 	// 	err := rpc.ReadJSON(&req, reader)
 
 	// 	if err != nil {
-	// 		venuslog.Debug("conn.go ReadJSON failed in server:", err)
+	// 		venuslog.Warn("conn.go ReadJSON failed in server:", err)
 	// 		Kick(conn.Id)
 	// 		return
 	// 	}
@@ -205,7 +215,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 	// 		return
 	// 	}
 
-	// 	venuslog.Debug("Sending SubmitWork response to client", res)
+	// 	venuslog.Warn("Sending SubmitWork response to client", res)
 
 	// 	conn.Send(res)
 	// }
@@ -218,21 +228,21 @@ func Kick(id uint64) {
 			// Close the connection
 			v.Conn.Close()
 
-			if Upstreams[v.Upstream] != nil {
-				// remove client from upstream
-				UpstreamsMut.Lock()
-				for clid, clval := range Upstreams[v.Upstream].Clients {
-					if clval == v.Id {
-						Upstreams[v.Upstream].Clients[clid] = Upstreams[v.Upstream].Clients[len(Upstreams[v.Upstream].Clients)-1]
-						Upstreams[v.Upstream].Clients = Upstreams[v.Upstream].Clients[:len(Upstreams[v.Upstream].Clients)-1]
-					}
-				}
-				// If upstream is empty, close it
-				if len(Upstreams[v.Upstream].Clients) == 0 {
-					Upstreams[v.Upstream].Close()
-				}
-				UpstreamsMut.Unlock()
-			}
+			// if Upstreams[v.Upstream] != nil {
+			// 	// remove client from upstream
+			// 	UpstreamsMut.Lock()
+			// 	for clid, clval := range Upstreams[v.Upstream].Clients {
+			// 		if clval == v.Id {
+			// 			Upstreams[v.Upstream].Clients[clid] = Upstreams[v.Upstream].Clients[len(Upstreams[v.Upstream].Clients)-1]
+			// 			Upstreams[v.Upstream].Clients = Upstreams[v.Upstream].Clients[:len(Upstreams[v.Upstream].Clients)-1]
+			// 		}
+			// 	}
+			// 	// If upstream is empty, close it
+			// 	if len(Upstreams[v.Upstream].Clients) == 0 {
+			// 		Upstreams[v.Upstream].Close()
+			// 	}
+			// 	UpstreamsMut.Unlock()
+			// }
 
 			// remove client from server connections
 			if len(srv.Connections) > 1 {
@@ -241,33 +251,5 @@ func Kick(id uint64) {
 				srv.Connections = make([]*stratumserver.Connection, 0, 100)
 			}
 		}
-	}
-}
-
-func GetNewJob(conn *stratumserver.Connection, job rpc.CompleteJob) {
-	conn.Lock()
-	defer conn.Unlock()
-
-	jobData, _, upstreamId, err := GetJob(conn)
-	if err != nil {
-		venuslog.Warn(err)
-		Kick(conn.Id)
-		return
-	}
-	if conn.Upstream != upstreamId {
-		venuslog.Debug("Upstream changed:", conn.Upstream)
-		conn.Upstream = upstreamId
-	}
-
-	jobContent := rpc.JobRpc{
-		Jsonrpc: "2.0",
-		Method:  "job",
-
-		Params: jobData,
-	}
-
-	err = conn.Send(jobContent)
-	if err != nil {
-		venuslog.Err(err)
 	}
 }

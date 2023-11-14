@@ -25,7 +25,7 @@ import (
 	"errors"
 )
 
-func ReadJSON(response any, reader *bufio.Reader) error {
+func ReadJSON1(response any, reader *bufio.Reader) error {
 	data, isPrefix, err := reader.ReadLine()
 
 	if isPrefix {
@@ -36,9 +36,21 @@ func ReadJSON(response any, reader *bufio.Reader) error {
 
 	str := string(data[:])
 	venuslog.Warn("data:", str)
-	venuslog.Warn("response:", response)
 
 	err = json.Unmarshal(data, response)
+	if err != nil {
+		venuslog.Warn("json unmarshal failed:", err)
+		return err
+	}
+	return nil
+}
+
+func ReadJSON(response any, data []byte) error {
+
+	str := string(data[:])
+	venuslog.Warn("data:", str)
+
+	err := json.Unmarshal(data, response)
 	if err != nil {
 		venuslog.Warn("json unmarshal failed:", err)
 		return err

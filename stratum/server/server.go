@@ -147,7 +147,7 @@ func (s *Server) Start(port uint16, bind string, isTls bool, poolId uint64) {
 
 		if err != nil {
 			venuslog.Info("Failed to load TLS certificate from file, generating a new one.")
-			venuslog.Debug(err)
+			venuslog.Warn(err)
 
 			certPem, keyPem, err := GenCertificate()
 			if err != nil {

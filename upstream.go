@@ -26,21 +26,14 @@ import (
 	stratumserver "btcminerproxy/stratum/server"
 	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
-	"encoding/hex"
-	"errors"
-	"fmt"
+	"bufio"
+	"time"
 )
 
 type Upstream struct {
-	Clients []uint64
-
-	TopNicehash byte
-
-	Stratum *stratumclient.Client
-
-	ID uint64
-
-	LastJob rpc.CompleteJob
+	ID     uint64
+	client *stratumclient.Client
+	server *stratumserver.Connection
 }
 
 var Upstreams = make(map[uint64]*Upstream, 100)
@@ -49,161 +42,64 @@ var LatestUpstream uint64
 
 // Send Subscribe to Pool
 func SendSubscribe(conn *stratumserver.Connection, subscribeMsg template.SubscribeMsg) {
-	if conn.Upstream == 0 {
-		venuslog.Debug("Already connected")
+
+	if conn.Upstream != 0 {
+		venuslog.Warn("Already connected")
 		return
 	}
 
-	// newId := LatestUpstream + 1
+	venuslog.Warn("Sending Subscribe to Pool")
+
+	newId := LatestUpstream + 1
 	client := &stratumclient.Client{}
 
-	err := client.SendSubscribe(config.CFG.Pools[conn.PoolId].Url, subscribeMsg)
+	err := client.SendSubscribe(config.CFG.Pools[conn.PoolId].Url, subscribeMsg, newId)
+
 	if err != nil {
 		venuslog.Warn("Error while sending subscribe to pool")
 	}
+
+	Upstreams[newId] = &Upstream{
+		ID:     newId,
+		client: client,
+		server: conn,
+	}
+	conn.Upstream = newId
+
+	go handleDownstream(newId)
 }
 
-// GetJob returns a job from the Upstream, the client ID, and the upstream ID
-func GetJob(conn *stratumserver.Connection) (rpc.CompleteJob, string, uint64, error) {
-	connClientId := conn.Id
+func handleDownstream(upstreamId uint64) {
 
-	var theJob rpc.CompleteJob
-	var upstreamId uint64
-	var nicehash byte
+	cl := Upstreams[upstreamId].client
 
-	if conn.Upstream != 0 {
-		theJob = Upstreams[conn.Upstream].LastJob
-		upstreamId = conn.Upstream
-		nicehash = Upstreams[conn.Upstream].TopNicehash + 1
-		Upstreams[LatestUpstream].TopNicehash++
-	} else if len(Upstreams) == 0 || Upstreams[LatestUpstream].TopNicehash == 0xff {
-		venuslog.Debug("New upstream connection")
-
-		newId := LatestUpstream + 1
-		client := &stratumclient.Client{}
-
-		jobChan, err := client.Connect(
-			config.CFG.Pools[config.CFG.PoolIndex].Url,
-			config.CFG.Pools[config.CFG.PoolIndex].Tls,
-			config.CFG.Pools[config.CFG.PoolIndex].TlsFingerprint,
-			config.USERAGENT,
-			config.CFG.Pools[config.CFG.PoolIndex].User,
-			config.CFG.Pools[config.CFG.PoolIndex].Pass,
-		)
-		if err != nil {
-			return rpc.CompleteJob{}, "", 0, err
-		}
-
-		recvJob := <-jobChan
-
-		if recvJob == nil {
-			return rpc.CompleteJob{}, "", 0, errors.New("received nil job")
-		}
-
-		Upstreams[newId] = &Upstream{
-			ID:          newId,
-			Clients:     []uint64{connClientId},
-			TopNicehash: 1,
-			Stratum:     client,
-			LastJob:     *recvJob,
-		}
-		LatestUpstream = newId
-
-		go UpstreamHandler(Upstreams[newId], jobChan)
-
-		theJob = *recvJob
-		upstreamId = newId
-		nicehash = 1
-	} else {
-		venuslog.Debug("Reusing upstream job")
-		upstreamId = LatestUpstream
-		theJob = Upstreams[upstreamId].LastJob
-		nicehash = Upstreams[upstreamId].TopNicehash + 1
-		Upstreams[upstreamId].TopNicehash++
-		Upstreams[upstreamId].Clients = append(Upstreams[upstreamId].Clients, conn.Id)
-	}
-	venuslog.Debug("Nicehash byte is", hex.EncodeToString([]byte{nicehash}))
-
-	blobBin, err := hex.DecodeString(theJob.Blob)
-	if err != nil {
-		return rpc.CompleteJob{}, "", 0, err
-	}
-	if len(blobBin) < 44 {
-		return rpc.CompleteJob{}, "", 0, fmt.Errorf("mining blob is too short: %x", blobBin)
-	}
-
-	blobBin[42] = nicehash
-
-	theJob.Blob = hex.EncodeToString(blobBin)
-
-	return theJob, Upstreams[upstreamId].Stratum.ClientId, upstreamId, nil
-}
-
-func UpstreamHandler(us *Upstream, jobChan <-chan *rpc.CompleteJob) {
 	for {
-		recvJob := <-jobChan
+		response := &template.StratumMsg{}
+		cl.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+		reader := bufio.NewReaderSize(cl.Conn, config.MAX_REQUEST_SIZE)
+		data, isPrefix, errR := reader.ReadLine()
 
-		if recvJob == nil {
-			if us.Stratum.IsAlive() {
-				venuslog.Warn("recvJob is nil")
-			} else {
-				venuslog.Debug("recvJob is nil")
-			}
-			UpstreamsMut.Lock()
-			us.Close()
-			UpstreamsMut.Unlock()
+		venuslog.Warn("Received data from pool")
+
+		if errR != nil || isPrefix {
+			venuslog.Warn("ReadJSON failed in proxy:", errR)
 			return
 		}
 
-		venuslog.Debug("Received new job with Job ID", recvJob.JobID)
+		err := rpc.ReadJSON(&response, data)
 
-		HandleUpstreamJob(us, recvJob)
-	}
-}
-
-// upstream must be locked before closing
-func (us *Upstream) Close() {
-
-	us.Stratum.Close()
-
-	Upstreams[us.ID] = nil
-
-	if LatestUpstream == us.ID {
-		if len(Upstreams) == 1 {
-			venuslog.Debug("Last upstream destroyed.")
-			LatestUpstream = 0
-		}
-	}
-
-	delete(Upstreams, us.ID)
-}
-
-func HandleUpstreamJob(us *Upstream, job *rpc.CompleteJob) {
-	venuslog.Debug("New job for Upstream", us.ID)
-
-	UpstreamsMut.Lock()
-	defer UpstreamsMut.Unlock()
-
-	venuslog.Debug("New job for Upstream", us.ID, "part 2 TODO")
-
-	us.TopNicehash = 0
-
-	us.LastJob = *job
-
-	for _, v := range us.Clients {
-		venuslog.Debug("Sending to client", v)
-		srv.ConnsMut.Lock()
-		venuslog.Debug("Sending part 2")
-
-		//innerloop:
-		for _, conn := range srv.Connections {
-			if conn.Id == v {
-				venuslog.Debug("Refreshing job for connection", conn.Id)
-				GetNewJob(conn, us.LastJob)
-				//break innerloop
-			}
+		if err != nil {
+			venuslog.Warn("ReadJSON failed in proxy as server response:", err)
 		}
 
-		srv.ConnsMut.Unlock()
+		// severMsg := &template.StratumSeverMsg{}
+
+		// err1 := rpc.ReadJSON(&severMsg, data)
+
+		// if err1 != nil {
+		// 	venuslog.Warn("ReadJSON failed in proxy as server msg:", err1)
+		// }
+
+		Upstreams[upstreamId].server.SendBytes(data)
 	}
 }
