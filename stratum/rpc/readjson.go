@@ -33,6 +33,11 @@ func ReadJSON(response any, reader *bufio.Reader) error {
 	} else if err != nil {
 		return err
 	}
+
+	str := string(data[:])
+	venuslog.Warn("data:", str)
+	venuslog.Warn("response:", response)
+
 	err = json.Unmarshal(data, response)
 	if err != nil {
 		venuslog.Warn("json unmarshal failed:", err)

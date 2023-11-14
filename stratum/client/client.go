@@ -23,6 +23,7 @@ import (
 	"btcminerproxy/config"
 	"btcminerproxy/mutex"
 	"btcminerproxy/stratum/rpc"
+	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
 	"bufio"
 	"crypto/sha256"
@@ -58,6 +59,33 @@ func (cl *Client) IsAlive() bool {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
 	return cl.alive
+}
+
+func (cl *Client) SendSubscribe(destination string, subscribeReq template.SubscribeMsg) (err error) {
+	cl.Close()
+	cl.mutex.Lock()
+	defer cl.mutex.Unlock()
+	cl.destination = destination
+
+	cl.conn, err = net.DialTimeout("tcp", destination, time.Second*30)
+
+	// send subscribe
+	data, err := json.Marshal(subscribeReq)
+	if err != nil {
+		venuslog.Debug("json marshalling failed:", err, "for client")
+		return err
+	}
+	cl.conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
+
+	venuslog.Debug("sending to pool:", string(data))
+
+	data = append(data, '\n')
+	if _, err = cl.conn.Write(data); err != nil {
+		venuslog.Warn(err)
+		return err
+	}
+
+	return nil
 }
 
 // Connect to the stratum server port with the given login info. Returns error if connection could
@@ -248,6 +276,9 @@ func (cl *Client) dispatchJobs(conn net.Conn, jobChan chan<- *rpc.CompleteJob, f
 	for {
 		response := &rpc.Response{}
 		conn.SetReadDeadline(time.Now().Add(5 * 60 * time.Second))
+
+		venuslog.Warn("readjson from dispatchJobs")
+
 		err := rpc.ReadJSON(response, reader)
 		if err != nil {
 			if cl.alive {

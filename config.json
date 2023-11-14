@@ -7,9 +7,9 @@
 			"pass": "x"
 		},
 		{
-			"url": "eu.stratum.kilopool.com:3333",
+			"url": "sha256asicboost.auto.nicehash.com:9200",
 			"tls": false,
-			"user": "aaa",
+			"user": "36zdfuG8yRU2DjyRUW6jF5abrV1Q6WyYnh",
 			"pass": "x"
 		}
 	],
@@ -17,12 +17,14 @@
 		{
 			"host": "0.0.0.0",
 			"port": 3333,
-			"tls": false
+			"tls": false,
+			"pool_id": 1 
 		},
 		{
 			"host": "0.0.0.0",
 			"port": 3334,
-			"tls": true
+			"tls": true,
+			"pool_id": 1
 		}
 	],
 	"dashboard": {
@@ -36,5 +38,6 @@
 	"colors": true,
 	"log_date": true,
 	"title": true,
-	"verbose": false
+	"verbose": false,
+	"pool_index" : 1
 }

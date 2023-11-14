@@ -41,19 +41,17 @@ import (
 )
 
 type Server struct {
-	Connections []*Connection
-	ConnsMut    mutex.Mutex
-
+	Connections    []*Connection
+	ConnsMut       mutex.Mutex
 	NewConnections chan *Connection
 }
 
 type Connection struct {
-	Conn net.Conn
-	Id   uint64
-
+	Conn     net.Conn
+	Id       uint64
 	Upstream uint64
-
 	mutex.Mutex
+	PoolId uint64
 }
 
 func (c *Connection) Send(a any) error {
@@ -137,7 +135,7 @@ func GenCertificate() ([]byte, []byte, error) {
 	return certPem, keyPem, os.WriteFile("./certificate.pem", certPem, 0o666)
 }
 
-func (s *Server) Start(port uint16, bind string, isTls bool) {
+func (s *Server) Start(port uint16, bind string, isTls bool, poolId uint64) {
 	if s.NewConnections == nil {
 		s.NewConnections = make(chan *Connection, 1)
 	}
@@ -188,8 +186,9 @@ func (s *Server) Start(port uint16, bind string, isTls bool) {
 		venuslog.Info("New incoming connection:", c.RemoteAddr().String())
 
 		conn := &Connection{
-			Conn: c,
-			Id:   randomUint64(),
+			Conn:   c,
+			Id:     randomUint64(),
+			PoolId: poolId,
 		}
 		go s.handleConnection(conn)
 	}

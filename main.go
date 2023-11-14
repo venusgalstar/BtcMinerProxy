@@ -99,7 +99,7 @@ func main() {
 		venuslog.Info(fmt.Sprintf("Dashboard is available at http://127.0.0.1:%d", config.CFG.Dashboard.Port))
 	}
 
-	venuslog.Info("Using pool", config.CFG.Pools[0].Url)
+	venuslog.Info("Using pool", config.CFG.Pools[config.CFG.PoolIndex].Url)
 
 	go Stats()
 

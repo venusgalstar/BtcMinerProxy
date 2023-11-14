@@ -35,9 +35,10 @@ type Config struct {
 		Pass           string `json:"pass"`
 	} `json:"pools"`
 	Bind []struct {
-		Host string `json:"host"`
-		Port uint16 `json:"port"`
-		Tls  bool   `json:"tls"`
+		Host   string `json:"host"`
+		Port   uint16 `json:"port"`
+		Tls    bool   `json:"tls"`
+		PoolId uint64 `json:"pool_id"`
 	} `json:"bind"`
 	Dashboard struct {
 		Enabled bool   `json:"enabled"`
@@ -51,6 +52,7 @@ type Config struct {
 	LogDate        bool   `json:"log_date"`
 	Title          bool   `json:"title"`
 	Verbose        bool   `json:"verbose"`
+	PoolIndex      int    `json:"pool_index"`
 }
 
 const DefaultConfig = `{

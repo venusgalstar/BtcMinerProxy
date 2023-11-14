@@ -27,6 +27,30 @@ import (
 	"strconv"
 )
 
+// Stratum Protocol
+
+type StratumMsg struct {
+	ID     uint64 `json:"id"`
+	Method string `json:"method"`
+}
+
+type SubscribeMsg struct {
+	ID     uint64 `json:"id"`
+	Method string `json:"method"`
+	Params any    `json:"params,omitempty"`
+}
+
+type AuthorizeMsg struct {
+	ID     uint64          `json:"id"`
+	Method string          `json:"method"`
+	Params authorizeParams `json:"params"`
+}
+
+type authorizeParams struct {
+	User string `json:"user"`
+	Pass string `json:"pass"`
+}
+
 type Template struct {
 	Blob           []byte
 	Difficulty     uint64

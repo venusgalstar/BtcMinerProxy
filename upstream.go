@@ -24,6 +24,7 @@ import (
 	stratumclient "btcminerproxy/stratum/client"
 	"btcminerproxy/stratum/rpc"
 	stratumserver "btcminerproxy/stratum/server"
+	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
 	"encoding/hex"
 	"errors"
@@ -46,6 +47,22 @@ var Upstreams = make(map[uint64]*Upstream, 100)
 var UpstreamsMut mutex.Mutex
 var LatestUpstream uint64
 
+// Send Subscribe to Pool
+func SendSubscribe(conn *stratumserver.Connection, subscribeMsg template.SubscribeMsg) {
+	if conn.Upstream == 0 {
+		venuslog.Debug("Already connected")
+		return
+	}
+
+	// newId := LatestUpstream + 1
+	client := &stratumclient.Client{}
+
+	err := client.SendSubscribe(config.CFG.Pools[conn.PoolId].Url, subscribeMsg)
+	if err != nil {
+		venuslog.Warn("Error while sending subscribe to pool")
+	}
+}
+
 // GetJob returns a job from the Upstream, the client ID, and the upstream ID
 func GetJob(conn *stratumserver.Connection) (rpc.CompleteJob, string, uint64, error) {
 	connClientId := conn.Id
@@ -66,12 +83,12 @@ func GetJob(conn *stratumserver.Connection) (rpc.CompleteJob, string, uint64, er
 		client := &stratumclient.Client{}
 
 		jobChan, err := client.Connect(
-			config.CFG.Pools[0].Url,
-			config.CFG.Pools[0].Tls,
-			config.CFG.Pools[0].TlsFingerprint,
+			config.CFG.Pools[config.CFG.PoolIndex].Url,
+			config.CFG.Pools[config.CFG.PoolIndex].Tls,
+			config.CFG.Pools[config.CFG.PoolIndex].TlsFingerprint,
 			config.USERAGENT,
-			config.CFG.Pools[0].User,
-			config.CFG.Pools[0].Pass,
+			config.CFG.Pools[config.CFG.PoolIndex].User,
+			config.CFG.Pools[config.CFG.PoolIndex].Pass,
 		)
 		if err != nil {
 			return rpc.CompleteJob{}, "", 0, err
