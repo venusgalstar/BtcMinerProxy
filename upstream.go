@@ -41,22 +41,21 @@ var UpstreamsMut mutex.Mutex
 var LatestUpstream uint64
 
 // Send Subscribe to Pool
-func SendSubscribe(conn *stratumserver.Connection, subscribeMsg template.SubscribeMsg) {
+func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 
 	if conn.Upstream != 0 {
 		venuslog.Warn("Already connected")
 		return
 	}
 
-	venuslog.Warn("Sending Subscribe to Pool")
-
 	newId := LatestUpstream + 1
 	client := &stratumclient.Client{}
 
-	err := client.SendSubscribe(config.CFG.Pools[conn.PoolId].Url, subscribeMsg, newId)
+	err := client.SendSubscribe(config.CFG.Pools[conn.PoolId].Url, data, newId)
 
 	if err != nil {
 		venuslog.Warn("Error while sending subscribe to pool")
+		Kick(newId)
 	}
 
 	Upstreams[newId] = &Upstream{
@@ -102,4 +101,21 @@ func handleDownstream(upstreamId uint64) {
 
 		Upstreams[upstreamId].server.SendBytes(data)
 	}
+}
+
+// upstream must be locked before closing
+func (us *Upstream) Close() {
+
+	us.client.Close()
+
+	Upstreams[us.ID] = nil
+
+	if LatestUpstream == us.ID {
+		if len(Upstreams) == 1 {
+			venuslog.Debug("Last upstream destroyed.")
+			LatestUpstream = 0
+		}
+	}
+
+	delete(Upstreams, us.ID)
 }

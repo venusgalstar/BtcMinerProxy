@@ -45,9 +45,9 @@ func StartProxy() {
 			srv.Start(v.Port, v.Host, v.Tls, v.PoolId)
 		}
 	}
-
 }
 
+// Handling Upstreaming Message and Data
 func HandleConnection(conn *stratumserver.Connection) {
 	for {
 		req := template.StratumMsg{}
@@ -71,7 +71,10 @@ func HandleConnection(conn *stratumserver.Connection) {
 
 		switch req.Method {
 		case "mining.subscribe":
-			venuslog.Warn("Stratum proxy received subscribe from miner :", conn.Conn.RemoteAddr())
+			venuslog.Warn("Stratum proxy received subscribing msg from miner :", conn.Conn.RemoteAddr())
+
+			str := string(data[:])
+			venuslog.Warn("data:", str)
 
 			subscribeReq := template.SubscribeMsg{}
 			err := rpc.ReadJSON(&subscribeReq, data)
@@ -81,144 +84,20 @@ func HandleConnection(conn *stratumserver.Connection) {
 				return
 			}
 
-			venuslog.Warn("Stratum proxy tried to send")
-
-			SendSubscribe(conn, subscribeReq)
+			SendSubscribe(conn, data)
 
 		case "mining.authorize":
 			venuslog.Warn("Stratum proxy received authorize from miner :", conn.Conn.RemoteAddr())
+
+			str := string(data[:])
+			venuslog.Warn("data:", str)
+
 			Upstreams[conn.Upstream].client.SendData(data)
 		default:
 			venuslog.Warn("Stratum proxy received data from miner :", conn.Conn.RemoteAddr())
 			Upstreams[conn.Upstream].client.SendData(data)
 		}
 	}
-
-	// // Listen for authorize
-	// reqAuth := stratumserver.AuthorizeMsg{}
-	// conn.Conn.SetReadDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
-	// readerSock := bufio.NewReaderSize(conn.Conn, config.MAX_REQUEST_SIZE)
-
-	// errAuth := rpc.ReadJSON(&reqAuth, readerSock)
-	// if errAuth != nil {
-	// 	venuslog.Warn("ReadJSON failed in server:", errAuth)
-	// 	Kick(conn.Id)
-	// 	return
-	// }
-
-	// config.CFG.Pools[config.CFG.PoolIndex].User = reqAuth.Params.User
-	// config.CFG.Pools[config.CFG.PoolIndex].Pass = reqAuth.Params.Pass
-
-	// venuslog.Warn("Stratum server received auth")
-
-	// // Write login response
-
-	// conn.Lock()
-	// UpstreamsMut.Lock()
-	// jobData, clientId, upstreamId, err := GetJob(conn)
-	// UpstreamsMut.Unlock()
-	// if err != nil {
-	// 	venuslog.Warn(err)
-	// 	Kick(conn.Id)
-	// 	conn.Unlock()
-	// 	return
-	// }
-
-	// conn.Upstream = upstreamId
-
-	// loginResponse := stratumserver.LoginResponse{
-	// 	ID:     req.ID,
-	// 	Status: "OK",
-	// 	Result: stratumserver.LoginResponseResult{
-	// 		ID: clientId,
-	// 		Job: template.Job{
-	// 			Algo:     jobData.Algo,
-	// 			Blob:     jobData.Blob,
-	// 			Height:   jobData.Height,
-	// 			JobID:    jobData.JobID,
-	// 			SeedHash: jobData.SeedHash,
-	// 			Target:   jobData.Target,
-	// 		},
-	// 		Status:     "OK",
-	// 		Extensions: []string{"keepalive", "nicehash"},
-	// 	},
-	// 	Error: nil,
-	// }
-	// conn.Send(loginResponse)
-	// conn.Unlock()
-
-	// // Listen for submitted shares
-	// for {
-	// 	req := stratumserver.RequestJob{}
-	// 	conn.Conn.SetReadDeadline(time.Now().Add(time.Duration(config.READ_TIMEOUT_SECONDS) * time.Second))
-	// 	reader := bufio.NewReaderSize(conn.Conn, config.MAX_REQUEST_SIZE)
-	// 	err := rpc.ReadJSON(&req, reader)
-
-	// 	if err != nil {
-	// 		venuslog.Warn("conn.go ReadJSON failed in server:", err)
-	// 		Kick(conn.Id)
-	// 		return
-	// 	}
-
-	// 	if req.Method == "keepalived" {
-	// 		conn.Send(stratumserver.Reply{
-	// 			ID:      req.ID,
-	// 			Jsonrpc: "2.0",
-	// 			Result: map[string]any{
-	// 				"status": "KEEPALIVED",
-	// 			},
-	// 		})
-	// 		continue
-	// 	} else if req.Method != "submit" {
-	// 		venuslog.Warn("Unknown method", req.Method, ". Skipping.")
-	// 		continue
-	// 	}
-
-	// 	UpstreamsMut.Lock()
-	// 	if Upstreams[conn.Upstream] == nil {
-	// 		panic("Upstreams[conn.Upstream] is nil")
-	// 	}
-
-	// 	var diff uint64
-	// 	if len(Upstreams[conn.Upstream].LastJob.Target) == 16 {
-	// 		dec, err := hex.DecodeString(Upstreams[conn.Upstream].LastJob.Target)
-	// 		if err != nil {
-	// 			venuslog.Err(err)
-	// 			Kick(conn.Id)
-	// 			return
-	// 		}
-	// 		diff = template.MidDiffToDiff(dec)
-	// 	} else {
-	// 		dec, err := hex.DecodeString(Upstreams[conn.Upstream].LastJob.Target)
-	// 		if err != nil {
-	// 			venuslog.Err(err)
-	// 			Kick(conn.Id)
-	// 			return
-	// 		}
-	// 		diff = template.ShortDiffToDiff(dec)
-	// 	}
-
-	// 	foundShares = append(foundShares, FoundShare{
-	// 		Time: time.Now(),
-	// 		Diff: diff,
-	// 	})
-
-	// 	res, err := Upstreams[conn.Upstream].Stratum.SubmitWork(req.Params.Nonce, req.Params.JobID, req.Params.Result, req.ID)
-	// 	UpstreamsMut.Unlock()
-	// 	if err != nil {
-	// 		venuslog.Err(err)
-	// 		Kick(conn.Id)
-	// 		return
-	// 	} else if res == nil {
-	// 		venuslog.Err("response is nil")
-	// 		Kick(conn.Id)
-	// 		return
-	// 	}
-
-	// 	venuslog.Warn("Sending SubmitWork response to client", res)
-
-	// 	conn.Send(res)
-	// }
 }
 
 // Note: srv.ConnsMut must be locked before calling this

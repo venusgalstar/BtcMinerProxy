@@ -22,9 +22,7 @@ package stratumclient
 import (
 	"btcminerproxy/config"
 	"btcminerproxy/mutex"
-	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
-	"encoding/json"
 	"net"
 	"time"
 )
@@ -49,7 +47,7 @@ func (cl *Client) IsAlive() bool {
 	return cl.alive
 }
 
-func (cl *Client) SendSubscribe(destination string, subscribeReq template.SubscribeMsg, upstream uint64) (err error) {
+func (cl *Client) SendSubscribe(destination string, data []byte, upstream uint64) (err error) {
 
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
@@ -57,15 +55,7 @@ func (cl *Client) SendSubscribe(destination string, subscribeReq template.Subscr
 	cl.destination = destination
 	cl.Conn, err = net.DialTimeout("tcp", destination, time.Second*30)
 
-	// send subscribe
-	data, err := json.Marshal(subscribeReq)
-	if err != nil {
-		venuslog.Warn("json marshalling failed:", err, "for client")
-		return err
-	}
 	cl.Conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
-
-	venuslog.Warn("sending to pool:", string(data))
 
 	data = append(data, '\n')
 	if _, err = cl.Conn.Write(data); err != nil {
@@ -80,10 +70,22 @@ func (cl *Client) SendSubscribe(destination string, subscribeReq template.Subscr
 }
 
 func (cl *Client) SendData(data []byte) (err error) {
+
 	data = append(data, '\n')
+
 	if _, err = cl.Conn.Write(data); err != nil {
 		venuslog.Warn(err)
 		return err
 	}
 	return nil
+}
+
+func (cl *Client) Close() {
+	cl.mutex.Lock()
+	defer cl.mutex.Unlock()
+	if !cl.alive {
+		return
+	}
+	cl.alive = false
+	cl.Conn.Close()
 }

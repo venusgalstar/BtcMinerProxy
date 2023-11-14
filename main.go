@@ -35,10 +35,12 @@ import (
 
 func main() {
 	err := loadConfig()
+
 	if err != nil {
 		venuslog.Info(fmt.Sprintf("Failed to read config.json (%s), running configurator", err))
 		configurator()
 	}
+
 	err = config.CFG.Validate()
 	if err != nil {
 		venuslog.Fatal(err)
@@ -116,8 +118,6 @@ func loadConfig() error {
 }
 
 var wordRegexp = regexp.MustCompile("^\\w+$")
-var xmrRegexp = regexp.MustCompile("^[48][0-9AB][1-9A-HJ-NP-Za-km-z]{93}$")
-var zephRegexp = regexp.MustCompile("^ZEPH[1-9A-HJ-NP-Za-km-z]+$")
 
 func configurator() {
 	userAddr := prompt("Enter your wallet address: ")
@@ -130,16 +130,8 @@ func configurator() {
 	}
 	curcfg := strings.ReplaceAll(string(config.DefaultConfig), "YOUR_WALLET_ADDRESS", userAddr)
 
-	if xmrRegexp.Match(addr) {
-		curcfg = strings.ReplaceAll(curcfg, "PORT_TLS", "3334")
-		curcfg = strings.ReplaceAll(curcfg, "PORT_NO_TLS", "3333")
-	} else if zephRegexp.Match(addr) {
-		curcfg = strings.ReplaceAll(curcfg, "PORT_TLS", "5556")
-		curcfg = strings.ReplaceAll(curcfg, "PORT_NO_TLS", "5555")
-	} else {
-		curcfg = strings.ReplaceAll(curcfg, "PORT_TLS", "3334")
-		curcfg = strings.ReplaceAll(curcfg, "PORT_NO_TLS", "3333")
-	}
+	curcfg = strings.ReplaceAll(curcfg, "PORT_TLS", "3334")
+	curcfg = strings.ReplaceAll(curcfg, "PORT_NO_TLS", "3333")
 
 	os.WriteFile("./config.json", []byte(curcfg), 0o666)
 	err := json.Unmarshal([]byte(curcfg), &config.CFG)
