@@ -22,11 +22,9 @@ import (
 	"btcminerproxy/config"
 	"btcminerproxy/mutex"
 	stratumclient "btcminerproxy/stratum/client"
-	"btcminerproxy/stratum/rpc"
 	stratumserver "btcminerproxy/stratum/server"
-	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
-	"bufio"
+	"io"
 	"time"
 )
 
@@ -55,7 +53,7 @@ func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 
 	if err != nil {
 		venuslog.Warn("Error while sending subscribe to pool")
-		Kick(newId)
+		Kick(conn.Id)
 	}
 
 	Upstreams[newId] = &Upstream{
@@ -65,41 +63,40 @@ func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 	}
 	conn.Upstream = newId
 
+	venuslog.Warn("New upstream id ", newId)
+
 	go handleDownstream(newId)
 }
 
 func handleDownstream(upstreamId uint64) {
 
 	cl := Upstreams[upstreamId].client
+	buf := make([]byte, config.MAX_REQUEST_SIZE)
 
 	for {
-		response := &template.StratumMsg{}
-		cl.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-		reader := bufio.NewReaderSize(cl.Conn, config.MAX_REQUEST_SIZE)
-		data, isPrefix, errR := reader.ReadLine()
+		cl.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
+		nr, err := cl.Conn.Read(buf)
 
-		venuslog.Warn("Received data from pool")
-
-		if errR != nil || isPrefix {
-			venuslog.Warn("ReadJSON failed in proxy:", errR)
+		if err != nil {
+			if err == io.EOF {
+				continue
+			}
+			venuslog.Warn("ReadJSON failed in proxy from pool:", err)
 			return
 		}
 
-		err := rpc.ReadJSON(&response, data)
+		venuslog.Warn("Received data from pool")
+		str := string(buf[:])
+		venuslog.Warn("data:", str)
 
-		if err != nil {
-			venuslog.Warn("ReadJSON failed in proxy as server response:", err)
+		nw, nerr := Upstreams[upstreamId].server.Conn.Write(buf[0:nr])
+
+		if nerr != nil {
+			venuslog.Warn("err on write ", nerr)
 		}
 
-		// severMsg := &template.StratumSeverMsg{}
-
-		// err1 := rpc.ReadJSON(&severMsg, data)
-
-		// if err1 != nil {
-		// 	venuslog.Warn("ReadJSON failed in proxy as server msg:", err1)
-		// }
-
-		Upstreams[upstreamId].server.SendBytes(data)
+		venuslog.Warn("read bytes", nr)
+		venuslog.Warn("write bytes ", nw)
 	}
 }
 

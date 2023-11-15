@@ -25,6 +25,7 @@ import (
 	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
 	"bufio"
+	"io"
 	"time"
 )
 
@@ -51,12 +52,15 @@ func StartProxy() {
 func HandleConnection(conn *stratumserver.Connection) {
 	for {
 		req := template.StratumMsg{}
-		conn.Conn.SetReadDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
+		conn.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
 		reader := bufio.NewReaderSize(conn.Conn, config.MAX_REQUEST_SIZE)
 		data, isPrefix, errR := reader.ReadLine()
 
 		if errR != nil || isPrefix {
-			venuslog.Warn("ReadJSON failed in proxy:", errR)
+			if errR == io.EOF {
+				continue
+			}
+			venuslog.Warn("Read Data failed in proxy from miner:", errR)
 			Kick(conn.Id)
 			return
 		}
@@ -64,7 +68,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 		err := rpc.ReadJSON(&req, data)
 
 		if err != nil {
-			venuslog.Warn("ReadJSON failed in proxy:", err)
+			venuslog.Warn("ReadJSON failed in proxy from miner:", err)
 			Kick(conn.Id)
 			return
 		}
@@ -79,7 +83,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 			subscribeReq := template.SubscribeMsg{}
 			err := rpc.ReadJSON(&subscribeReq, data)
 			if err != nil {
-				venuslog.Warn("ReadJSON failed in proxy:", err)
+				venuslog.Warn("ReadJSON failed in proxy from miner:", err)
 				Kick(conn.Id)
 				return
 			}
@@ -88,7 +92,6 @@ func HandleConnection(conn *stratumserver.Connection) {
 
 		case "mining.authorize":
 			venuslog.Warn("Stratum proxy received authorize from miner :", conn.Conn.RemoteAddr())
-
 			str := string(data[:])
 			venuslog.Warn("data:", str)
 
@@ -107,21 +110,14 @@ func Kick(id uint64) {
 			// Close the connection
 			v.Conn.Close()
 
-			// if Upstreams[v.Upstream] != nil {
-			// 	// remove client from upstream
-			// 	UpstreamsMut.Lock()
-			// 	for clid, clval := range Upstreams[v.Upstream].Clients {
-			// 		if clval == v.Id {
-			// 			Upstreams[v.Upstream].Clients[clid] = Upstreams[v.Upstream].Clients[len(Upstreams[v.Upstream].Clients)-1]
-			// 			Upstreams[v.Upstream].Clients = Upstreams[v.Upstream].Clients[:len(Upstreams[v.Upstream].Clients)-1]
-			// 		}
-			// 	}
-			// 	// If upstream is empty, close it
-			// 	if len(Upstreams[v.Upstream].Clients) == 0 {
-			// 		Upstreams[v.Upstream].Close()
-			// 	}
-			// 	UpstreamsMut.Unlock()
-			// }
+			if Upstreams[v.Upstream] != nil {
+				// remove client from upstream
+				UpstreamsMut.Lock()
+				// If upstream is empty, close it
+				Upstreams[v.Upstream].Close()
+
+				UpstreamsMut.Unlock()
+			}
 
 			// remove client from server connections
 			if len(srv.Connections) > 1 {

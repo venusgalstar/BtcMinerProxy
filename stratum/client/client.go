@@ -53,7 +53,7 @@ func (cl *Client) SendSubscribe(destination string, data []byte, upstream uint64
 	defer cl.mutex.Unlock()
 
 	cl.destination = destination
-	cl.Conn, err = net.DialTimeout("tcp", destination, time.Second*30)
+	cl.Conn, err = net.DialTimeout("tcp", destination, time.Second*config.WRITE_TIMEOUT_SECONDS)
 
 	cl.Conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
 
@@ -71,9 +71,8 @@ func (cl *Client) SendSubscribe(destination string, data []byte, upstream uint64
 
 func (cl *Client) SendData(data []byte) (err error) {
 
-	data = append(data, '\n')
-
-	if _, err = cl.Conn.Write(data); err != nil {
+	cl.Conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
+	if _, err = cl.Conn.Write(append(data, '\n')); err != nil {
 		venuslog.Warn(err)
 		return err
 	}
