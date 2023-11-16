@@ -22,7 +22,9 @@ import (
 	"btcminerproxy/config"
 	"btcminerproxy/mutex"
 	stratumclient "btcminerproxy/stratum/client"
+	"btcminerproxy/stratum/rpc"
 	stratumserver "btcminerproxy/stratum/server"
+	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
 	"io"
 	"time"
@@ -72,31 +74,42 @@ func handleDownstream(upstreamId uint64) {
 
 	cl := Upstreams[upstreamId].client
 	buf := make([]byte, config.MAX_REQUEST_SIZE)
+	bufLen := 0
+	cl.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
 
 	for {
-		cl.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
-		nr, err := cl.Conn.Read(buf)
+		msg, msgLen, readLen, err := template.ReadLineFromSocket(cl.Conn, buf, bufLen)
 
-		if err != nil {
-			if err == io.EOF {
+		if err != nil || msgLen == 0 {
+			if err == io.EOF || msgLen == 0 {
 				continue
 			}
-			venuslog.Warn("ReadJSON failed in proxy from pool:", err)
+			venuslog.Warn("Read failed in proxy from pool socket:", err)
 			return
 		}
 
-		venuslog.Warn("Received data from pool")
-		str := string(buf[:])
-		venuslog.Warn("data:", str)
+		buf = buf[msgLen+1:]
+		bufLen = bufLen + readLen - msgLen - 1
 
-		nw, nerr := Upstreams[upstreamId].server.Conn.Write(buf[0:nr])
+		venuslog.Warn("Received data from pool")
+
+		req := template.StratumMsg{}
+		errJson := rpc.ReadJSON(&req, msg)
+
+		if errJson != nil {
+			venuslog.Warn("ReadJSON failed in proxy from miner:", errJson)
+			return
+		}
+
+		// str := string(msg[:])
+		// venuslog.Warn("data:", str)
+
+		_, nerr := Upstreams[upstreamId].server.Conn.Write(append(msg, '\n'))
 
 		if nerr != nil {
 			venuslog.Warn("err on write ", nerr)
 		}
 
-		venuslog.Warn("read bytes", nr)
-		venuslog.Warn("write bytes ", nw)
 	}
 }
 

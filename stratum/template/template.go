@@ -19,11 +19,15 @@
 package template
 
 import (
+	"btcminerproxy/config"
 	"btcminerproxy/venuslog"
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"math/big"
+	"net"
 	"strconv"
 )
 
@@ -60,6 +64,50 @@ type StratumMsgResponse struct {
 type StratumSeverMsg struct {
 	ID     uint64 `json:"id"`
 	Method string `json:"method"`
+}
+
+// Read Function From Socket
+func ReadLineFromSocket(conn net.Conn, buf []byte, bufLen int) (line []byte, lineLen int, readLen int, err error) {
+
+	if bufLen > 0 {
+		firstLine := bytes.IndexByte(buf, '\n')
+
+		if firstLine > 0 {
+			slice := buf[0:firstLine]
+			return slice, firstLine, 0, nil
+		}
+	}
+
+	readBuf := make([]byte, config.MAX_REQUEST_SIZE)
+	readBytes, err := conn.Read(readBuf)
+
+	if err != nil {
+		if err != io.EOF {
+			return nil, 0, 0, err
+		}
+	}
+
+	if readBytes == 0 {
+		return nil, 0, 0, nil
+	}
+
+	if bufLen+readBytes >= config.MAX_REQUEST_SIZE {
+		venuslog.Warn("Over Loaded")
+		return nil, 0, readBytes, nil
+	}
+
+	for idx := 0; idx < readBytes; idx++ {
+		buf[bufLen+idx] = readBuf[idx]
+	}
+
+	firstLine := bytes.IndexByte(buf, '\n')
+
+	if firstLine == -1 || firstLine == 0 {
+		return nil, 0, readBytes, nil
+	}
+
+	slice := buf[0:firstLine]
+	return slice, firstLine, readBytes, nil
 }
 
 // Original struct

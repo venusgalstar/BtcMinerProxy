@@ -24,7 +24,6 @@ import (
 	stratumserver "btcminerproxy/stratum/server"
 	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
-	"bufio"
 	"io"
 	"time"
 )
@@ -50,25 +49,31 @@ func StartProxy() {
 
 // Handling Upstreaming Message and Data
 func HandleConnection(conn *stratumserver.Connection) {
+
+	buf := make([]byte, config.MAX_REQUEST_SIZE)
+	bufLen := 0
+	conn.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
+
 	for {
 		req := template.StratumMsg{}
-		conn.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
-		reader := bufio.NewReaderSize(conn.Conn, config.MAX_REQUEST_SIZE)
-		data, isPrefix, errR := reader.ReadLine()
+		msg, msgLen, readLen, err := template.ReadLineFromSocket(conn.Conn, buf, bufLen)
 
-		if errR != nil || isPrefix {
-			if errR == io.EOF {
+		if err != nil || msgLen == 0 {
+			if err == io.EOF || msgLen == 0 {
 				continue
 			}
-			venuslog.Warn("Read Data failed in proxy from miner:", errR)
+			venuslog.Warn("Read Data failed in proxy from miner:", err)
 			Kick(conn.Id)
 			return
 		}
 
-		err := rpc.ReadJSON(&req, data)
+		buf = buf[msgLen+1:]
+		bufLen = bufLen + readLen - msgLen - 1
 
-		if err != nil {
-			venuslog.Warn("ReadJSON failed in proxy from miner:", err)
+		errJson := rpc.ReadJSON(&req, msg)
+
+		if errJson != nil {
+			venuslog.Warn("ReadJSON failed in proxy from miner:", errJson)
 			Kick(conn.Id)
 			return
 		}
@@ -77,28 +82,28 @@ func HandleConnection(conn *stratumserver.Connection) {
 		case "mining.subscribe":
 			venuslog.Warn("Stratum proxy received subscribing msg from miner :", conn.Conn.RemoteAddr())
 
-			str := string(data[:])
+			str := string(msg[:])
 			venuslog.Warn("data:", str)
 
 			subscribeReq := template.SubscribeMsg{}
-			err := rpc.ReadJSON(&subscribeReq, data)
+			err := rpc.ReadJSON(&subscribeReq, msg)
 			if err != nil {
 				venuslog.Warn("ReadJSON failed in proxy from miner:", err)
 				Kick(conn.Id)
 				return
 			}
 
-			SendSubscribe(conn, data)
+			SendSubscribe(conn, msg)
 
 		case "mining.authorize":
 			venuslog.Warn("Stratum proxy received authorize from miner :", conn.Conn.RemoteAddr())
-			str := string(data[:])
+			str := string(msg[:])
 			venuslog.Warn("data:", str)
 
-			Upstreams[conn.Upstream].client.SendData(data)
+			Upstreams[conn.Upstream].client.SendData(msg)
 		default:
 			venuslog.Warn("Stratum proxy received data from miner :", conn.Conn.RemoteAddr())
-			Upstreams[conn.Upstream].client.SendData(data)
+			Upstreams[conn.Upstream].client.SendData(msg)
 		}
 	}
 }
