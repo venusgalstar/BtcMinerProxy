@@ -24,6 +24,7 @@ import (
 	stratumserver "btcminerproxy/stratum/server"
 	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
+	"encoding/json"
 	"io"
 	"time"
 )
@@ -78,29 +79,40 @@ func HandleConnection(conn *stratumserver.Connection) {
 			return
 		}
 
+		str := string(msg[:])
+		venuslog.Warn("data:", str)
+
 		switch req.Method {
+
 		case "mining.subscribe":
 			venuslog.Warn("Stratum proxy received subscribing msg from miner :", conn.Conn.RemoteAddr())
-
-			str := string(msg[:])
-			venuslog.Warn("data:", str)
-
-			subscribeReq := template.SubscribeMsg{}
-			err := rpc.ReadJSON(&subscribeReq, msg)
-			if err != nil {
-				venuslog.Warn("ReadJSON failed in proxy from miner:", err)
-				Kick(conn.Id)
-				return
-			}
-
 			SendSubscribe(conn, msg)
 
 		case "mining.authorize":
 			venuslog.Warn("Stratum proxy received authorize from miner :", conn.Conn.RemoteAddr())
-			str := string(msg[:])
-			venuslog.Warn("data:", str)
 
-			SendData(conn, msg)
+			authorizemsg := template.AuthorizeMsg{}
+			errJson := rpc.ReadJSON(&authorizemsg, msg)
+
+			if errJson != nil {
+				venuslog.Warn("ReadJSON failed in proxy from miner:", errJson)
+				continue
+			}
+			authorizemsg.Params[0] = config.CFG.Pools[conn.PoolId].User
+			authorizemsg.Params[1] = config.CFG.Pools[conn.PoolId].Pass
+
+			newmsg, err := json.Marshal(authorizemsg)
+			if err != nil {
+				venuslog.Warn("ReadJSON failed in proxy replace auth:", err)
+				continue
+			}
+
+			SendData(conn, newmsg)
+
+		case "mining.configure":
+			venuslog.Warn("Stratum proxy received configure from miner :", conn.Conn.RemoteAddr())
+			SendConfigure(conn, msg)
+
 		default:
 			venuslog.Warn("Stratum proxy received data from miner :", conn.Conn.RemoteAddr())
 			SendData(conn, msg)

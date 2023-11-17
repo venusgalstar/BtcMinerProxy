@@ -41,24 +41,23 @@ var UpstreamsMut mutex.Mutex
 var LatestUpstream uint64
 
 // Send Subscribe to Pool
-func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 
-	if conn.Upstream != 0 {
-		venuslog.Warn("Already connected")
-		return
-	}
+func CreateNewUpstream(conn *stratumserver.Connection) {
+
+	venuslog.Warn("Trying to create new upstream")
 
 	UpstreamsMut.Lock()
 
 	newId := LatestUpstream + 1
 	client := &stratumclient.Client{}
 
-	err := client.SendSubscribe(config.CFG.Pools[conn.PoolId].Url, data, newId)
+	err := client.Connect(config.CFG.Pools[conn.PoolId].Url, newId)
 
 	if err != nil {
-		venuslog.Warn("Error while sending subscribe to pool")
+		venuslog.Warn("Error while sending connecting to pool")
 		UpstreamsMut.Unlock()
 		Kick(conn.Id)
+		return
 	}
 
 	Upstreams[newId] = &Upstream{
@@ -70,9 +69,35 @@ func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 
 	UpstreamsMut.Unlock()
 
-	venuslog.Warn("New upstream id ", newId)
-
 	go handleDownstream(newId)
+
+	venuslog.Warn("New upstream id ", newId)
+}
+
+func SendSubscribe(conn *stratumserver.Connection, data []byte) {
+
+	if conn.Upstream == 0 {
+		CreateNewUpstream(conn)
+	}
+
+	err := Upstreams[conn.Upstream].client.SendData(data)
+
+	if err != nil {
+		venuslog.Warn("Error while sending configure to pool")
+	}
+}
+
+func SendConfigure(conn *stratumserver.Connection, data []byte) {
+
+	if conn.Upstream == 0 {
+		CreateNewUpstream(conn)
+	}
+
+	err := Upstreams[conn.Upstream].client.SendData(data)
+
+	if err != nil {
+		venuslog.Warn("Error while sending configure to pool")
+	}
 }
 
 func SendData(conn *stratumserver.Connection, data []byte) {
@@ -128,8 +153,8 @@ func handleDownstream(upstreamId uint64) {
 			return
 		}
 
-		// str := string(msg[:])
-		// venuslog.Warn("data:", str)
+		str := string(msg[:])
+		venuslog.Warn("data:", str)
 
 		_, nerr := Upstreams[upstreamId].server.Conn.Write(append(msg, '\n'))
 

@@ -40,9 +40,9 @@ type SubscribeMsg struct {
 }
 
 type AuthorizeMsg struct {
-	ID     uint64          `json:"id"`
-	Method string          `json:"method"`
-	Params authorizeParams `json:"params"`
+	ID     uint64   `json:"id"`
+	Method string   `json:"method"`
+	Params []string `json:"params"`
 }
 
 type authorizeParams struct {

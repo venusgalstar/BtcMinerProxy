@@ -47,15 +47,26 @@ func (cl *Client) IsAlive() bool {
 	return cl.alive
 }
 
-func (cl *Client) SendSubscribe(destination string, data []byte, upstream uint64) (err error) {
-
+func (cl *Client) Connect(destination string, upstream uint64) (err error) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
 
 	cl.destination = destination
 	cl.Conn, err = net.DialTimeout("tcp", destination, time.Second*config.WRITE_TIMEOUT_SECONDS)
-
 	cl.Conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
+
+	if err != nil {
+		return err
+	}
+	cl.upstreamId = upstream
+	cl.alive = true
+	return nil
+}
+
+func (cl *Client) SendSubscribe(destination string, data []byte, upstream uint64) (err error) {
+
+	cl.mutex.Lock()
+	defer cl.mutex.Unlock()
 
 	data = append(data, '\n')
 	if _, err = cl.Conn.Write(data); err != nil {
@@ -64,7 +75,6 @@ func (cl *Client) SendSubscribe(destination string, data []byte, upstream uint64
 	}
 
 	venuslog.Warn("sent subscribe to pool")
-	cl.upstreamId = upstream
 
 	return nil
 }
