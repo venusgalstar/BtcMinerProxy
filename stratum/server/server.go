@@ -50,8 +50,7 @@ type Connection struct {
 	Conn     net.Conn
 	Id       uint64
 	Upstream uint64
-	mutex.Mutex
-	PoolId uint64
+	PoolId   uint64
 }
 
 func (c *Connection) Send(a any) error {
@@ -61,6 +60,7 @@ func (c *Connection) Send(a any) error {
 	}
 	return c.SendBytes(data)
 }
+
 func (c *Connection) SendBytes(data []byte) error {
 	c.Conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
 	_, err := c.Conn.Write(append(data, '\n'))
@@ -75,6 +75,10 @@ func randomUint64() uint64 {
 	rand.Read(b)
 
 	return binary.BigEndian.Uint64(b)
+}
+
+func (c *Connection) Close() {
+	c.Conn.Close()
 }
 
 // Returns certPem, keyPem, err

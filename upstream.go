@@ -48,6 +48,8 @@ func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 		return
 	}
 
+	UpstreamsMut.Lock()
+
 	newId := LatestUpstream + 1
 	client := &stratumclient.Client{}
 
@@ -55,6 +57,7 @@ func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 
 	if err != nil {
 		venuslog.Warn("Error while sending subscribe to pool")
+		UpstreamsMut.Unlock()
 		Kick(conn.Id)
 	}
 
@@ -64,6 +67,8 @@ func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 		server: conn,
 	}
 	conn.Upstream = newId
+
+	UpstreamsMut.Unlock()
 
 	venuslog.Warn("New upstream id ", newId)
 
@@ -85,6 +90,9 @@ func handleDownstream(upstreamId uint64) {
 				continue
 			}
 			venuslog.Warn("Read failed in proxy from pool socket:", err)
+			UpstreamsMut.Lock()
+			Upstreams[upstreamId].Close()
+			UpstreamsMut.Unlock()
 			return
 		}
 
@@ -98,6 +106,9 @@ func handleDownstream(upstreamId uint64) {
 
 		if errJson != nil {
 			venuslog.Warn("ReadJSON failed in proxy from miner:", errJson)
+			UpstreamsMut.Lock()
+			Upstreams[upstreamId].Close()
+			UpstreamsMut.Unlock()
 			return
 		}
 
@@ -117,6 +128,7 @@ func handleDownstream(upstreamId uint64) {
 func (us *Upstream) Close() {
 
 	us.client.Close()
+	us.server.Close()
 
 	Upstreams[us.ID] = nil
 
