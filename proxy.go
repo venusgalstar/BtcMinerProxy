@@ -96,7 +96,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 
 			if errJson != nil {
 				venuslog.Warn("ReadJSON failed in proxy from miner:", errJson)
-				continue
+				return
 			}
 			authorizemsg.Params[0] = config.CFG.Pools[conn.PoolId].User
 			authorizemsg.Params[1] = config.CFG.Pools[conn.PoolId].Pass
@@ -104,7 +104,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 			newmsg, err := json.Marshal(authorizemsg)
 			if err != nil {
 				venuslog.Warn("ReadJSON failed in proxy replace auth:", err)
-				continue
+				return
 			}
 
 			SendData(conn, newmsg)
@@ -117,6 +117,8 @@ func HandleConnection(conn *stratumserver.Connection) {
 			venuslog.Warn("Stratum proxy received data from miner :", conn.Conn.RemoteAddr())
 			SendData(conn, msg)
 		}
+
+		copy(buf, buf[msgLen+1:])
 	}
 }
 

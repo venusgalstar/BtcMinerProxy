@@ -119,12 +119,12 @@ func SendData(conn *stratumserver.Connection, data []byte) {
 func handleDownstream(upstreamId uint64) {
 
 	cl := Upstreams[upstreamId].client
-	buf := make([]byte, config.MAX_REQUEST_SIZE)
+	totalBuf := make([]byte, config.MAX_REQUEST_SIZE)
 	bufLen := 0
 	cl.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
 
 	for {
-		msg, msgLen, readLen, err := template.ReadLineFromSocket(cl.Conn, buf, bufLen)
+		msg, msgLen, readLen, err := template.ReadLineFromSocket(cl.Conn, totalBuf, bufLen)
 
 		if err != nil || msgLen == 0 {
 			if err == io.EOF || msgLen == 0 {
@@ -137,10 +137,13 @@ func handleDownstream(upstreamId uint64) {
 			return
 		}
 
-		buf = buf[msgLen+1:]
+		// totalBuf = totalBuf[msgLen+1:]
 		bufLen = bufLen + readLen - msgLen - 1
 
 		venuslog.Warn("Received data from pool")
+
+		str := string(msg[:])
+		venuslog.Warn("data from upstream:", str)
 
 		req := template.StratumMsg{}
 		errJson := rpc.ReadJSON(&req, msg)
@@ -153,9 +156,6 @@ func handleDownstream(upstreamId uint64) {
 			return
 		}
 
-		str := string(msg[:])
-		venuslog.Warn("data:", str)
-
 		_, nerr := Upstreams[upstreamId].server.Conn.Write(append(msg, '\n'))
 
 		if nerr != nil {
@@ -165,6 +165,8 @@ func handleDownstream(upstreamId uint64) {
 			UpstreamsMut.Unlock()
 			return
 		}
+
+		copy(totalBuf, totalBuf[msgLen+1:])
 
 	}
 }

@@ -91,6 +91,10 @@ func ReadLineFromSocket(conn net.Conn, buf []byte, bufLen int) (line []byte, lin
 		return nil, 0, readBytes, nil
 	}
 
+	venuslog.Warn("buffering len", len(buf))
+	venuslog.Warn("buffered len", bufLen)
+	venuslog.Warn("readBytes len", readBytes)
+
 	for idx := 0; idx < readBytes; idx++ {
 		buf[bufLen+idx] = readBuf[idx]
 	}
