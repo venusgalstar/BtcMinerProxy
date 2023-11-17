@@ -75,6 +75,22 @@ func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 	go handleDownstream(newId)
 }
 
+func SendData(conn *stratumserver.Connection, data []byte) {
+
+	if conn.Upstream == 0 {
+		venuslog.Warn("Connection broken")
+		Kick(conn.Id)
+		return
+	}
+
+	err := Upstreams[conn.Upstream].client.SendData(data)
+
+	if err != nil {
+		venuslog.Warn("Connection broken")
+		Kick(conn.Id)
+	}
+}
+
 func handleDownstream(upstreamId uint64) {
 
 	cl := Upstreams[upstreamId].client
@@ -119,6 +135,10 @@ func handleDownstream(upstreamId uint64) {
 
 		if nerr != nil {
 			venuslog.Warn("err on write ", nerr)
+			UpstreamsMut.Lock()
+			Upstreams[upstreamId].Close()
+			UpstreamsMut.Unlock()
+			return
 		}
 
 	}

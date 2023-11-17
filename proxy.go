@@ -59,7 +59,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 		msg, msgLen, readLen, err := template.ReadLineFromSocket(conn.Conn, buf, bufLen)
 
 		if err != nil || msgLen == 0 {
-			if err == io.EOF || msgLen == 0 {
+			if err == io.EOF {
 				continue
 			}
 			venuslog.Warn("Read Data failed in proxy from miner:", err)
@@ -100,10 +100,10 @@ func HandleConnection(conn *stratumserver.Connection) {
 			str := string(msg[:])
 			venuslog.Warn("data:", str)
 
-			Upstreams[conn.Upstream].client.SendData(msg)
+			SendData(conn, msg)
 		default:
 			venuslog.Warn("Stratum proxy received data from miner :", conn.Conn.RemoteAddr())
-			Upstreams[conn.Upstream].client.SendData(msg)
+			SendData(conn, msg)
 		}
 	}
 }
