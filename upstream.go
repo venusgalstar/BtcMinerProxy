@@ -27,6 +27,7 @@ import (
 	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
 	"io"
+	"net"
 	"time"
 )
 
@@ -190,4 +191,26 @@ func (us *Upstream) Close() {
 	}
 
 	delete(Upstreams, us.ID)
+}
+
+// disconnect miner
+func disconnectMiner(remoteAddr string) (err error) {
+
+	venuslog.Warn("trying to delete miner", remoteAddr)
+
+	for _, upstream := range Upstreams {
+
+		venuslog.Warn("Deleted miner", upstream.server.Conn.RemoteAddr().String())
+		host, _, _ := net.SplitHostPort(upstream.server.Conn.RemoteAddr().String())
+
+		if host != remoteAddr {
+			continue
+		}
+
+		upstream.Close()
+
+		venuslog.Warn("Deleted miner", remoteAddr)
+
+	}
+	return nil
 }

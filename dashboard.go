@@ -63,5 +63,15 @@ func StartDashboard() {
 		c.JSON(200, config.CFG)
 	})
 
+	r.GET("/disconnect", func(c *gin.Context) {
+		remoteAddr := c.Query("miner")
+
+		disconnectMiner(remoteAddr)
+
+		c.JSON(200, gin.H{
+			"deleted_miner": remoteAddr,
+		})
+	})
+
 	r.Run(fmt.Sprintf("%s:%d", config.CFG.Dashboard.Host, config.CFG.Dashboard.Port))
 }
