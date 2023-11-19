@@ -69,7 +69,61 @@ func StartDashboard() {
 		disconnectMiner(remoteAddr)
 
 		c.JSON(200, gin.H{
-			"deleted_miner": remoteAddr,
+			"result": "ok",
+		})
+	})
+
+	r.GET("/addWhite", func(c *gin.Context) {
+		remoteAddr := c.Query("addr")
+
+		addList(remoteAddr, true)
+
+		c.JSON(200, gin.H{
+			"result": "ok",
+		})
+	})
+
+	r.GET("/delWhite", func(c *gin.Context) {
+		remoteAddr := c.Query("addr")
+
+		delList(remoteAddr, true)
+
+		c.JSON(200, gin.H{
+			"result": "ok",
+		})
+	})
+
+	r.GET("/addBlack", func(c *gin.Context) {
+		remoteAddr := c.Query("addr")
+
+		addList(remoteAddr, false)
+
+		c.JSON(200, gin.H{
+			"result": "ok",
+		})
+	})
+
+	r.GET("/delBlack", func(c *gin.Context) {
+		remoteAddr := c.Query("addr")
+
+		delList(remoteAddr, false)
+
+		c.JSON(200, gin.H{
+			"result": "ok",
+		})
+	})
+
+	r.GET("/getWhiteList", func(c *gin.Context) {
+
+		c.JSON(200, gin.H{
+			"list": getList(true),
+		})
+	})
+
+	r.GET("/getBlackList", func(c *gin.Context) {
+
+		c.JSON(200, gin.H{
+			"list": getList(false),
 		})
 	})
 

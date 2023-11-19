@@ -20,6 +20,7 @@ package main
 
 import (
 	"btcminerproxy/config"
+	"btcminerproxy/stats"
 	"btcminerproxy/venuslog"
 	"bufio"
 	"encoding/json"
@@ -29,8 +30,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-
-	"btcminerproxy/stats"
 )
 
 // This is main file of this project where main function is definited.
@@ -52,6 +51,13 @@ func main() {
 	err = config.CFG.Validate()
 	if err != nil {
 		venuslog.Fatal(err)
+	}
+
+	// Connecting to redis
+	errDB := connectRedis()
+
+	if errDB != nil {
+		venuslog.Fatal("Failed to connect to database", errDB)
 	}
 
 	// After checking loading info
