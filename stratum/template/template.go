@@ -61,7 +61,7 @@ type StratumSeverMsg struct {
 	Method string `json:"method"`
 }
 
-// Read Function From Socket
+// Read one stratum msg from Socket, because protocol is tcp, we need buffering
 func ReadLineFromSocket(conn net.Conn, buf []byte, bufLen int) (line []byte, lineLen int, readLen int, err error) {
 
 	if bufLen > 0 {

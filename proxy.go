@@ -31,6 +31,8 @@ import (
 
 var srv = stratumserver.Server{}
 
+// Main process of proxy, starting proxy depends config proxy
+// in terms of port and monitoring incoming connection from miner
 func StartProxy() {
 	go func() {
 		for {
@@ -56,6 +58,8 @@ func HandleConnection(conn *stratumserver.Connection) {
 	conn.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
 
 	for {
+
+		// Read data from socket and parsing stratum msg one by one
 		req := template.StratumMsg{}
 		msg, msgLen, readLen, err := template.ReadLineFromSocket(conn.Conn, buf, bufLen)
 
@@ -82,6 +86,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 		str := string(msg[:])
 		venuslog.Warn("data:", str)
 
+		// Recognizing message type and handling services
 		switch req.Method {
 
 		case "mining.subscribe":

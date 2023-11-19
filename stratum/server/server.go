@@ -139,6 +139,7 @@ func GenCertificate() ([]byte, []byte, error) {
 	return certPem, keyPem, os.WriteFile("./certificate.pem", certPem, 0o666)
 }
 
+// Start listening connection request from miners
 func (s *Server) Start(port uint16, bind string, isTls bool, poolId uint64) {
 	if s.NewConnections == nil {
 		s.NewConnections = make(chan *Connection, 1)
@@ -198,6 +199,7 @@ func (s *Server) Start(port uint16, bind string, isTls bool, poolId uint64) {
 	}
 }
 
+// Append miner socket(server socket in miner's side)
 func (srv *Server) handleConnection(conn *Connection) {
 	srv.ConnsMut.Lock()
 	srv.Connections = append(srv.Connections, conn)

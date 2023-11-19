@@ -40,8 +40,7 @@ var Upstreams = make(map[uint64]*Upstream, 100)
 var UpstreamsMut mutex.Mutex
 var LatestUpstream uint64
 
-// Send Subscribe to Pool
-
+// Create new upstream for incomming connection from miner
 func CreateNewUpstream(conn *stratumserver.Connection) {
 
 	venuslog.Warn("Trying to create new upstream")
@@ -74,6 +73,7 @@ func CreateNewUpstream(conn *stratumserver.Connection) {
 	venuslog.Warn("New upstream id ", newId)
 }
 
+// Sending mining.subscribe msg of stratum to mining pool
 func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 
 	if conn.Upstream == 0 {
@@ -87,6 +87,7 @@ func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 	}
 }
 
+// Sending mining.configure msg of stratum to mining pool
 func SendConfigure(conn *stratumserver.Connection, data []byte) {
 
 	if conn.Upstream == 0 {
@@ -100,6 +101,7 @@ func SendConfigure(conn *stratumserver.Connection, data []byte) {
 	}
 }
 
+// Sending data of stratum to mining pool
 func SendData(conn *stratumserver.Connection, data []byte) {
 
 	if conn.Upstream == 0 {
@@ -116,6 +118,7 @@ func SendData(conn *stratumserver.Connection, data []byte) {
 	}
 }
 
+// Handling downstreaming data from mining pool to miner
 func handleDownstream(upstreamId uint64) {
 
 	cl := Upstreams[upstreamId].client

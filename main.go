@@ -33,7 +33,15 @@ import (
 	"btcminerproxy/stats"
 )
 
+// This is main file of this project where main function is definited.
+// Main Function does actions as listed
+// 1. Load and parsing configuration parameter from config.json
+// 2. Start web server for api
+// 3. Start proxy process
+
 func main() {
+
+	// Load configuration parameters from config.json as json format
 	err := loadConfig()
 
 	if err != nil {
@@ -46,6 +54,7 @@ func main() {
 		venuslog.Fatal(err)
 	}
 
+	// After checking loading info
 	venuslog.StartLogger()
 
 	threads := runtime.GOMAXPROCS(0)
@@ -54,8 +63,10 @@ func main() {
 		runtime.GOMAXPROCS(config.CFG.MaxConcurrency)
 	}
 
+	// Start webserver for api
 	go StartDashboard()
 
+	// Set log information
 	if config.CFG.Title {
 		colCyan := venuslog.COLOR_CYAN
 		colGreen := venuslog.COLOR_GREEN
@@ -103,11 +114,14 @@ func main() {
 
 	venuslog.Info("Using pool", config.CFG.Pools[config.CFG.PoolIndex].Url)
 
+	// Start stats process for monitoring
 	go Stats()
 
+	// Start main proxy process
 	StartProxy()
 }
 
+// Load configuration parameters from json
 func loadConfig() error {
 	data, err := os.ReadFile("./config.json")
 	if err != nil {
@@ -119,6 +133,7 @@ func loadConfig() error {
 
 var wordRegexp = regexp.MustCompile("^\\w+$")
 
+// Load configuration parameters from json
 func configurator() {
 	userAddr := prompt("Enter your wallet address: ")
 	venuslog.Info(userAddr)

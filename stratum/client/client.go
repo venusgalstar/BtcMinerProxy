@@ -47,6 +47,7 @@ func (cl *Client) IsAlive() bool {
 	return cl.alive
 }
 
+// Connect client socket to mining pool
 func (cl *Client) Connect(destination string, upstream uint64) (err error) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
@@ -63,6 +64,7 @@ func (cl *Client) Connect(destination string, upstream uint64) (err error) {
 	return nil
 }
 
+// Send subscribe through client socket to mining pool
 func (cl *Client) SendSubscribe(destination string, data []byte, upstream uint64) (err error) {
 
 	cl.mutex.Lock()
@@ -79,6 +81,7 @@ func (cl *Client) SendSubscribe(destination string, data []byte, upstream uint64
 	return nil
 }
 
+// Send data through client socket to mining pool
 func (cl *Client) SendData(data []byte) (err error) {
 
 	cl.Conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
@@ -89,6 +92,7 @@ func (cl *Client) SendData(data []byte) (err error) {
 	return nil
 }
 
+// Closing socket
 func (cl *Client) Close() {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
