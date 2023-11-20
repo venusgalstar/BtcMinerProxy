@@ -52,13 +52,17 @@ func (cl *Client) Connect(destination string, upstream uint64) (err error) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
 
+	venuslog.Warn("trying to connect ", destination)
+
 	cl.destination = destination
+
 	cl.Conn, err = net.DialTimeout("tcp", destination, time.Second*config.WRITE_TIMEOUT_SECONDS)
-	cl.Conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
 
 	if err != nil {
 		return err
 	}
+
+	cl.Conn.SetWriteDeadline(time.Now().Add(config.WRITE_TIMEOUT_SECONDS * time.Second))
 	cl.upstreamId = upstream
 	cl.alive = true
 	return nil

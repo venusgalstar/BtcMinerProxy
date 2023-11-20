@@ -140,7 +140,7 @@ func GenCertificate() ([]byte, []byte, error) {
 }
 
 // Start listening connection request from miners
-func (s *Server) Start(port uint16, bind string, isTls bool, poolId uint64) {
+func (s *Server) Start(port uint16, bind string, isTls bool) {
 	if s.NewConnections == nil {
 		s.NewConnections = make(chan *Connection, 1)
 	}
@@ -189,11 +189,12 @@ func (s *Server) Start(port uint16, bind string, isTls bool, poolId uint64) {
 		}
 
 		venuslog.Info("New incoming connection:", c.RemoteAddr().String())
+		venuslog.Info("pool index:", config.CFG.PoolIndex)
 
 		conn := &Connection{
 			Conn:   c,
 			Id:     randomUint64(),
-			PoolId: poolId,
+			PoolId: config.CFG.PoolIndex,
 		}
 		go s.handleConnection(conn)
 	}

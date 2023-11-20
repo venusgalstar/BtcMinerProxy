@@ -1,9 +1,9 @@
 {
 	"pools": [
 		{
-			"url": "eu.stratum.kilopool.com:3334",
-			"tls": true,
-			"user": "aaa",
+			"url": "stratum.antpool.com:3333",
+			"tls": false,
+			"user": "montyanderson.pc",
 			"pass": "x"
 		},
 		{
@@ -17,14 +17,12 @@
 		{
 			"host": "0.0.0.0",
 			"port": 3333,
-			"tls": false,
-			"pool_id": 1 
+			"tls": false
 		},
 		{
 			"host": "0.0.0.0",
 			"port": 3334,
-			"tls": true,
-			"pool_id": 1
+			"tls": true
 		}
 	],
 	"dashboard": {
@@ -39,5 +37,5 @@
 	"log_date": true,
 	"title": true,
 	"verbose": false,
-	"pool_index" : 1
+	"pool_index" : 0
 }

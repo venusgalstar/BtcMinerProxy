@@ -42,23 +42,24 @@ var UpstreamsMut mutex.Mutex
 var LatestUpstream uint64
 
 // Create new upstream for incomming connection from miner
-func CreateNewUpstream(conn *stratumserver.Connection) {
+func CreateNewUpstream(conn *stratumserver.Connection) error {
 
 	venuslog.Warn("Trying to create new upstream")
 
-	UpstreamsMut.Lock()
-
 	newId := LatestUpstream + 1
 	client := &stratumclient.Client{}
+
+	venuslog.Warn("Trying to Upstream ID", newId)
 
 	err := client.Connect(config.CFG.Pools[conn.PoolId].Url, newId)
 
 	if err != nil {
 		venuslog.Warn("Error while sending connecting to pool")
-		UpstreamsMut.Unlock()
-		Kick(conn.Id)
-		return
+		conn.Close()
+		return err
 	}
+
+	UpstreamsMut.Lock()
 
 	Upstreams[newId] = &Upstream{
 		ID:     newId,
@@ -71,20 +72,29 @@ func CreateNewUpstream(conn *stratumserver.Connection) {
 
 	go handleDownstream(newId)
 
-	venuslog.Warn("New upstream id ", newId)
+	venuslog.Warn("New upstream id ", newId, config.CFG.Pools[conn.PoolId].Url)
+
+	return nil
 }
 
 // Sending mining.subscribe msg of stratum to mining pool
 func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 
 	if conn.Upstream == 0 {
-		CreateNewUpstream(conn)
+		err := CreateNewUpstream(conn)
+
+		if err != nil {
+			venuslog.Warn("Error while sending subscribe to pool")
+			return
+		}
 	}
+
+	venuslog.Warn("Trying to send")
 
 	err := Upstreams[conn.Upstream].client.SendData(data)
 
 	if err != nil {
-		venuslog.Warn("Error while sending configure to pool")
+		venuslog.Warn("Error while sending subscribe to pool")
 	}
 }
 
@@ -92,7 +102,12 @@ func SendSubscribe(conn *stratumserver.Connection, data []byte) {
 func SendConfigure(conn *stratumserver.Connection, data []byte) {
 
 	if conn.Upstream == 0 {
-		CreateNewUpstream(conn)
+		err := CreateNewUpstream(conn)
+
+		if err != nil {
+			venuslog.Warn("Error while sending configure to pool")
+			return
+		}
 	}
 
 	err := Upstreams[conn.Upstream].client.SendData(data)
@@ -207,10 +222,28 @@ func disconnectMiner(remoteAddr string) (err error) {
 			continue
 		}
 
+		UpstreamsMut.Lock()
+
 		upstream.Close()
+
+		UpstreamsMut.Unlock()
 
 		venuslog.Warn("Deleted miner", remoteAddr)
 
 	}
 	return nil
+}
+
+// Closing all connections
+func closeAllUpstream() {
+
+	UpstreamsMut.Lock()
+
+	for _, us := range Upstreams {
+		us.Close()
+	}
+
+	UpstreamsMut.Unlock()
+
+	venuslog.Warn("Closed All Upstream")
 }

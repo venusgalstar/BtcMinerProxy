@@ -5,6 +5,7 @@ import (
 	"btcminerproxy/dash"
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,10 +30,13 @@ func timeSince(epoch int64) string {
 }
 
 func StartDashboard() {
+
 	r := gin.Default()
+
 	r.GET("/", func(c *gin.Context) {
 		c.Data(200, "text/html", dash.MainPage)
 	})
+
 	r.GET("/stats", func(c *gin.Context) {
 		getStats()
 		c.JSON(200, gin.H{
@@ -41,9 +45,11 @@ func StartDashboard() {
 			"upstreams": numUpstreams,
 		})
 	})
+
 	r.GET("/hr_chart", func(c *gin.Context) {
 		c.JSON(200, hrChart)
 	})
+
 	r.GET("/hr_chart_js", func(c *gin.Context) {
 		cd := chartData{
 			Labels: make([]string, 0, 288),
@@ -59,6 +65,7 @@ func StartDashboard() {
 
 		c.JSON(200, cd)
 	})
+
 	r.GET("/configuration", func(c *gin.Context) {
 		c.JSON(200, config.CFG)
 	})
@@ -124,6 +131,31 @@ func StartDashboard() {
 
 		c.JSON(200, gin.H{
 			"list": getList(false),
+		})
+	})
+
+	r.GET("/getPoolList", func(c *gin.Context) {
+
+		c.JSON(200, gin.H{
+			"list":       getPoolList(),
+			"currentIdx": config.CFG.PoolIndex,
+		})
+	})
+
+	r.GET("/setPool", func(c *gin.Context) {
+
+		poolIndexStr := c.Query("pool")
+		poolIndex, err := strconv.Atoi(poolIndexStr)
+
+		if err != nil {
+			c.JSON(200, gin.H{
+				"error": err,
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"list": setPool(uint64(poolIndex)),
 		})
 	})
 

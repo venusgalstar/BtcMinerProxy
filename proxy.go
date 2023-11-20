@@ -43,9 +43,9 @@ func StartProxy() {
 
 	for i, v := range config.CFG.Bind {
 		if i != len(config.CFG.Bind)-1 {
-			go srv.Start(v.Port, v.Host, v.Tls, v.PoolId)
+			go srv.Start(v.Port, v.Host, v.Tls)
 		} else {
-			srv.Start(v.Port, v.Host, v.Tls, v.PoolId)
+			srv.Start(v.Port, v.Host, v.Tls)
 		}
 	}
 }
@@ -134,14 +134,16 @@ func Kick(id uint64) {
 			// Close the connection
 			v.Conn.Close()
 
+			UpstreamsMut.Lock()
+
 			if Upstreams[v.Upstream] != nil {
 				// remove client from upstream
-				UpstreamsMut.Lock()
+
 				// If upstream is empty, close it
 				Upstreams[v.Upstream].Close()
-
-				UpstreamsMut.Unlock()
 			}
+
+			UpstreamsMut.Unlock()
 
 			// remove client from server connections
 			if len(srv.Connections) > 1 {

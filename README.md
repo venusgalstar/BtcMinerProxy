@@ -1,6 +1,6 @@
 # BtcMinerProxy
 
-Extremely high performance Monero (XMR) and Cryptonote Stratum mining protocol proxy.
+Extremely high performance Bitcoin Stratum mining protocol proxy.
 BtcMinerProxy takes full advantage of device multithreading.
 Reduces pool connections by up to 256 times, 1000 connected miners become just 4 for the pool.
 

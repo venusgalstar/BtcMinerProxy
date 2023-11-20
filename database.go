@@ -19,6 +19,7 @@
 package main
 
 import (
+	"btcminerproxy/config"
 	"btcminerproxy/venuslog"
 	"encoding/json"
 
@@ -104,4 +105,19 @@ func getList(isWhite bool) string {
 
 	blackstr, _ := json.Marshal(blackList)
 	return string(blackstr)
+}
+
+func getPoolList() string {
+
+	blackstr, _ := json.Marshal(config.CFG.Pools)
+	return string(blackstr)
+}
+
+func setPool(poolIdx uint64) string {
+
+	closeAllUpstream()
+
+	config.CFG.PoolIndex = poolIdx
+
+	return string("switched pool")
 }
