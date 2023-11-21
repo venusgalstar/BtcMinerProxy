@@ -26,15 +26,17 @@ import (
 
 var CFG Config
 
+type PoolInfo struct {
+	Url            string `json:"url"`
+	Tls            bool   `json:"tls"`
+	TlsFingerprint string `json:"fingerprint"`
+	User           string `json:"user"`
+	Pass           string `json:"pass"`
+}
+
 type Config struct {
-	Pools []struct {
-		Url            string `json:"url"`
-		Tls            bool   `json:"tls"`
-		TlsFingerprint string `json:"fingerprint"`
-		User           string `json:"user"`
-		Pass           string `json:"pass"`
-	} `json:"pools"`
-	Bind []struct {
+	Pools []PoolInfo `json:"pools"`
+	Bind  []struct {
 		Host string `json:"host"`
 		Port uint16 `json:"port"`
 		Tls  bool   `json:"tls"`

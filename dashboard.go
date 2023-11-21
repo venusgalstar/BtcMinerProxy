@@ -3,6 +3,8 @@ package main
 import (
 	"btcminerproxy/config"
 	"btcminerproxy/dash"
+	"btcminerproxy/venuslog"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -156,6 +158,43 @@ func StartDashboard() {
 
 		c.JSON(200, gin.H{
 			"list": setPool(uint64(poolIndex)),
+		})
+	})
+
+	r.GET("/addPool", func(c *gin.Context) {
+
+		// {
+		// 	"url": "stratum.antpool.com:3333",
+		// 	"tls": false,
+		// 	"user": "montyanderson.pc",
+		// 	"pass": "x"
+		// },
+
+		poolUrl := c.Query("url")
+		poolTls, _ := strconv.ParseBool(c.Query("tls"))
+		poolUser := c.Query("user")
+		poolPass := c.Query("pass")
+
+		venuslog.Warn("poolUrl", poolUrl)
+		venuslog.Warn("poolTls", poolTls)
+		venuslog.Warn("poolUser", poolUser)
+		venuslog.Warn("poolPass", poolPass)
+
+		newPool := config.PoolInfo{
+			Url:            poolUrl,
+			Tls:            poolTls,
+			TlsFingerprint: "",
+			User:           poolUser,
+			Pass:           poolPass,
+		}
+
+		config.CFG.Pools = append(config.CFG.Pools, newPool)
+
+		str, _ := json.Marshal(config.CFG.Pools)
+		venuslog.Warn("newPool", string(str))
+
+		c.JSON(200, gin.H{
+			"list": getPoolList(),
 		})
 	})
 
