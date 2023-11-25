@@ -37,5 +37,5 @@
 	"log_date": true,
 	"title": true,
 	"verbose": false,
-	"pool_index" : 0
+	"pool_index" : 1
 }

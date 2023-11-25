@@ -21,6 +21,7 @@ package main
 import (
 	"btcminerproxy/config"
 	"btcminerproxy/venuslog"
+	"encoding/json"
 	"strconv"
 	"time"
 )
@@ -51,9 +52,60 @@ type Hr struct {
 	Miners int     `json:"miners"`
 }
 
+type UpstreamWorker struct {
+	ID    string `json:"id"`
+	Share struct {
+		Accepted uint64 `json:"accepted"`
+		Rejected uint64 `json:"rejected"`
+	} `json:"shares"`
+	Submit struct {
+		Accepted uint64 `json:"accepted"`
+		Rejected uint64 `json:"rejected"`
+	} `json:"submits"`
+}
+
+type DownstreamWorker struct {
+	ID    string `json:"id"`
+	Share struct {
+		Accepted uint64 `json:"accepted"`
+		Stale    uint64 `json:"stale"`
+		Invalid  uint64 `json:"rejected"`
+	} `json:"shares"`
+	Submit struct {
+		Accepted uint64 `json:"accepted"`
+		Stale    uint64 `json:"stale"`
+		Invalid  uint64 `json:"rejected"`
+	} `json:"submits"`
+}
+
+type UpstreamReport struct {
+	Name      string           `json:"name"`
+	Direction string           `json:"direction"`
+	Workers   []UpstreamWorker `json:"workers"`
+}
+
+type DownstreamReport struct {
+	Name      string             `json:"name"`
+	Direction string             `json:"direction"`
+	Workers   []DownstreamWorker `json:"workers"`
+}
+
+type Report struct {
+	Timestamp string `json:"timestamp"`
+	Streams   struct {
+		Upstreams   []UpstreamReport
+		Downstreams []DownstreamReport
+	} `json:"streams"`
+}
+
+var globalReport *Report
 var hrChart = make([]Hr, 0, 288)
 
 func Stats() {
+
+	refreshReport()
+	globalReport = &Report{}
+
 	go func() {
 		for {
 			time.Sleep(5 * time.Minute)
@@ -74,6 +126,7 @@ func Stats() {
 
 	for {
 		getStats()
+		makeReport()
 		venuslog.Statsf("%s avg, miners: "+venuslog.COLOR_CYAN+"%d"+venuslog.COLOR_WHITE+", upstreams: "+venuslog.COLOR_CYAN+"%d"+venuslog.COLOR_WHITE,
 			venuslog.COLOR_CYAN+formatHashrate(avgHashrate)+"H/s"+venuslog.COLOR_WHITE,
 			numMiners,
@@ -81,6 +134,55 @@ func Stats() {
 		)
 		time.Sleep(time.Duration(config.CFG.PrintInterval) * time.Second)
 	}
+}
+
+func makeReport() {
+
+	reportStr, _ := json.Marshal(globalReport)
+	writeReport(string(reportStr[:]))
+
+	globalReport = &Report{}
+	t := time.Now()
+	globalReport.Timestamp = t.String()
+	venuslog.Warn("Timestamp", globalReport.Timestamp)
+
+	for _, upstream := range Upstreams {
+
+		uReport := &UpstreamReport{}
+		uReport.Name = config.CFG.Pools[upstream.server.PoolId].Url
+		uReport.Direction = "upstream"
+		uWorker := &UpstreamWorker{}
+		uWorker.ID = config.CFG.Pools[upstream.server.PoolId].User
+
+		uWorker.Share.Accepted = upstream.Shares.Accepted
+		uWorker.Share.Rejected = upstream.Shares.Rejected
+
+		uWorker.Submit.Accepted = upstream.Submits.Accepted
+		uWorker.Submit.Rejected = upstream.Submits.Rejected
+
+		uReport.Workers = append(uReport.Workers, *uWorker)
+		globalReport.Streams.Upstreams = append(globalReport.Streams.Upstreams, *uReport)
+
+		dReport := &DownstreamReport{}
+		dReport.Name = upstream.server.Conn.RemoteAddr().String()
+		dReport.Direction = "downstream"
+		dWorker := &DownstreamWorker{}
+		dWorker.ID = upstream.server.WorkerID
+
+		dWorker.Share.Accepted = upstream.server.Shares.Accepted
+		dWorker.Share.Invalid = upstream.server.Shares.Invalid
+		dWorker.Share.Stale = upstream.server.Shares.Stale
+		dWorker.Submit.Accepted = upstream.server.Submits.Accepted
+		dWorker.Submit.Invalid = upstream.server.Submits.Invalid
+		dWorker.Submit.Stale = upstream.server.Submits.Stale
+
+		dReport.Workers = append(dReport.Workers, *dWorker)
+
+		globalReport.Streams.Downstreams = append(globalReport.Streams.Downstreams, *dReport)
+
+	}
+	//Added for report
+
 }
 
 func getStats() {
@@ -94,7 +196,6 @@ func getStats() {
 		}
 	}
 	foundShares = shares2
-
 	avgHashrate = totalDiff / (config.HASHRATE_AVG_MINUTES * 60)
 
 	// TODO

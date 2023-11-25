@@ -51,6 +51,19 @@ type Connection struct {
 	Id       uint64
 	Upstream uint64
 	PoolId   uint64
+	WorkerID string
+
+	//added for report
+	Shares struct {
+		Accepted uint64
+		Stale    uint64
+		Invalid  uint64
+	}
+	Submits struct {
+		Accepted uint64
+		Stale    uint64
+		Invalid  uint64
+	}
 }
 
 func (c *Connection) Send(a any) error {

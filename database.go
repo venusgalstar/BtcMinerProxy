@@ -121,3 +121,23 @@ func setPool(poolIdx uint64) string {
 
 	return string("switched pool")
 }
+
+func writeReport(reportStr string) string {
+
+	oldLog, _ := db.Get("report").Result()
+
+	newLog := oldLog + "{" + reportStr + "}"
+
+	db.Set("report", newLog, 0)
+
+	return string("ok")
+}
+
+func getReport() string {
+	oldLog, _ := db.Get("report").Result()
+	return oldLog
+}
+
+func refreshReport() {
+	db.Set("report", "", 0)
+}

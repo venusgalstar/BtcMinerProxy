@@ -198,5 +198,12 @@ func StartDashboard() {
 		})
 	})
 
+	r.GET("/report", func(c *gin.Context) {
+
+		c.JSON(200, gin.H{
+			"list": getReport(),
+		})
+	})
+
 	r.Run(fmt.Sprintf("%s:%d", config.CFG.Dashboard.Host, config.CFG.Dashboard.Port))
 }

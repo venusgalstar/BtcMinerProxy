@@ -26,6 +26,7 @@ import (
 	stratumserver "btcminerproxy/stratum/server"
 	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
+	"encoding/json"
 	"io"
 	"net"
 	"time"
@@ -35,6 +36,16 @@ type Upstream struct {
 	ID     uint64
 	client *stratumclient.Client
 	server *stratumserver.Connection
+
+	//added for report
+	Shares struct {
+		Accepted uint64
+		Rejected uint64
+	}
+	Submits struct {
+		Accepted uint64
+		Rejected uint64
+	}
 }
 
 var Upstreams = make(map[uint64]*Upstream, 100)
@@ -69,6 +80,16 @@ func CreateNewUpstream(conn *stratumserver.Connection) error {
 	conn.Upstream = newId
 
 	UpstreamsMut.Unlock()
+
+	// report := *globalReport
+
+	reportStr1, err := json.Marshal(globalReport)
+
+	if err != nil {
+		venuslog.Warn("error on json", err)
+	}
+
+	venuslog.Warn("makeReport123", string(reportStr1[:]))
 
 	go handleDownstream(newId)
 
@@ -183,6 +204,13 @@ func handleDownstream(upstreamId uint64) {
 			Upstreams[upstreamId].Close()
 			UpstreamsMut.Unlock()
 			return
+		}
+
+		switch req.Method {
+		case "mining.notify":
+			venuslog.Warn("Stratum proxy received job from pool :")
+			Upstreams[upstreamId].Shares.Accepted++
+			Upstreams[upstreamId].server.Shares.Accepted++
 		}
 
 		copy(totalBuf, totalBuf[msgLen+1:])
