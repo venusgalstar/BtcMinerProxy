@@ -53,8 +53,9 @@ type Hr struct {
 }
 
 type UpstreamWorker struct {
-	ID    string `json:"id"`
-	Share struct {
+	ID     string `json:"id"`
+	IPAddr string `json:"ip-address"`
+	Share  struct {
 		Accepted uint64 `json:"accepted"`
 		Rejected uint64 `json:"rejected"`
 	} `json:"shares"`
@@ -65,8 +66,9 @@ type UpstreamWorker struct {
 }
 
 type DownstreamWorker struct {
-	ID    string `json:"id"`
-	Share struct {
+	ID     string `json:"id"`
+	IPAddr string `json:"ip-address"`
+	Share  struct {
 		Accepted uint64 `json:"accepted"`
 		Stale    uint64 `json:"stale"`
 		Invalid  uint64 `json:"rejected"`
@@ -153,6 +155,7 @@ func makeReport() {
 		uReport.Direction = "upstream"
 		uWorker := &UpstreamWorker{}
 		uWorker.ID = config.CFG.Pools[upstream.server.PoolId].User
+		uWorker.IPAddr = upstream.client.Conn.RemoteAddr().String()
 
 		uWorker.Share.Accepted = upstream.Shares.Accepted
 		uWorker.Share.Rejected = upstream.Shares.Rejected
@@ -168,6 +171,7 @@ func makeReport() {
 		dReport.Direction = "downstream"
 		dWorker := &DownstreamWorker{}
 		dWorker.ID = upstream.server.WorkerID
+		dWorker.IPAddr = upstream.server.Conn.RemoteAddr().String()
 
 		dWorker.Share.Accepted = upstream.server.Shares.Accepted
 		dWorker.Share.Invalid = upstream.server.Shares.Invalid
