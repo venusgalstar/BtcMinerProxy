@@ -1,4 +1,5 @@
 # Use the same base image for building and running
+FROM ubuntu:20.04
 FROM golang:1.20 as builder
 
 # Set up the build environment
@@ -14,12 +15,14 @@ RUN apt-get update && apt-get install -y redis-server
 # Copy the binary into the same base image
 FROM golang:1.20
 
-WORKDIR /mnt/app
-COPY --from=builder /mnt/app/btcminerproxy /mnt/app/btcminerproxy
-COPY --from=builder /mnt/app/config.json /mnt/app/config.json
-COPY --from=builder /mnt/app/start.sh /mnt/app/start.sh 
+WORKDIR /mnt/app/BtcMinerProxy
+COPY btcminerproxy btcminerproxy
+COPY config.json config.json
+COPY start.sh start.sh
+RUN chmod 777 start.sh
 
 # Expose port and run
 EXPOSE 1315
 EXPOSE 3333
-CMD start.sh
+EXPOSE 3334
+CMD ["./start.sh"]

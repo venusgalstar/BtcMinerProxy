@@ -1,3 +1,3 @@
 #!/bin/bash
-nohup redis-server &
+/usr/bin/redis-server &
 ./btcminerproxy
