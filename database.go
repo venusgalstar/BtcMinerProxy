@@ -99,21 +99,15 @@ func delList(remoteAddr string, isWhite bool) {
 	venuslog.Warn("blackstr", string(blackstr[:]))
 }
 
-func getList(isWhite bool) string {
+func getList(isWhite bool) map[string]bool {
 
 	if isWhite {
-		whitestr, _ := json.Marshal(whiteList)
-		return string(whitestr)
+		// whitestr, _ := json.Marshal(whiteList)
+		return whiteList
 	}
 
-	blackstr, _ := json.Marshal(blackList)
-	return string(blackstr)
-}
-
-func getPoolList() string {
-
-	blackstr, _ := json.Marshal(config.CFG.Pools)
-	return string(blackstr)
+	// blackstr, _ := json.Marshal(blackList)
+	return blackList
 }
 
 func setPool(poolIdx uint64) string {
@@ -127,11 +121,7 @@ func setPool(poolIdx uint64) string {
 
 func writeReport(reportStr string) string {
 
-	oldLog, _ := db.Get("report").Result()
-
-	newLog := oldLog + "{" + reportStr + "}"
-
-	db.Set("report", newLog, 0)
+	db.Set("report", reportStr, 0)
 
 	return string("ok")
 }

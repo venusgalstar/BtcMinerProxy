@@ -101,6 +101,7 @@ type Report struct {
 }
 
 var globalReport *Report
+var reportLog = make([]Report, 0, 100000)
 var hrChart = make([]Hr, 0, 288)
 
 func Stats() {
@@ -140,7 +141,9 @@ func Stats() {
 
 func makeReport() {
 
-	reportStr, _ := json.Marshal(globalReport)
+	reportLog = append(reportLog, *globalReport)
+
+	reportStr, _ := json.Marshal(reportLog)
 	writeReport(string(reportStr[:]))
 
 	globalReport = &Report{}

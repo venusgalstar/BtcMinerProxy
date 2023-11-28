@@ -127,8 +127,7 @@ func StartDashboard() {
 	r.GET("/getWhiteList", func(c *gin.Context) {
 
 		c.JSON(200, gin.H{
-			"list": getList(true),
-		})
+			"list": getList(true)})
 	})
 
 	r.GET("/getBlackList", func(c *gin.Context) {
@@ -141,7 +140,7 @@ func StartDashboard() {
 	r.GET("/getPoolList", func(c *gin.Context) {
 
 		c.JSON(200, gin.H{
-			"list":       getPoolList(),
+			"list":       config.CFG.Pools,
 			"currentIdx": config.CFG.PoolIndex,
 		})
 	})
@@ -196,14 +195,14 @@ func StartDashboard() {
 		venuslog.Warn("newPool", string(str))
 
 		c.JSON(200, gin.H{
-			"list": getPoolList(),
+			"list": config.CFG.Pools,
 		})
 	})
 
 	r.GET("/report", func(c *gin.Context) {
 
 		c.JSON(200, gin.H{
-			"list": getReport(),
+			"list": reportLog,
 		})
 	})
 
