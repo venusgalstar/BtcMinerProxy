@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+
+  btcminerproxy:
+    image: venusgalstar/btcminerproxy:latest
+    ports:
+      - 3333:3333
+      - 3334:3334
+      - 1315:1315
+    links: 
+      - redis-db
+    depends_on:
+      - redis-db
+    environment:
+      - REDIS_DB_URL=host.docker.internal:6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    container_name: btcminerproxy
+
+  redis-db:
+    image: redis
+    ports:
+      - 6379:6379
+    container_name: redis-db
+# volumes:
+#   redis-db:
+    # driver: local
+
+    
+
+
+    

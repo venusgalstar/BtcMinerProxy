@@ -30,6 +30,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // This is main file of this project where main function is definited.
@@ -52,6 +53,8 @@ func main() {
 	if err != nil {
 		venuslog.Fatal(err)
 	}
+
+	time.Sleep(5 * time.Second)
 
 	// Connecting to redis
 	errDB := connectRedis()
@@ -139,7 +142,7 @@ func loadConfig() error {
 
 var wordRegexp = regexp.MustCompile("^\\w+$")
 
-// Load configuration parameters from json
+// Load configuration parameters from jsonf
 func configurator() {
 	userAddr := prompt("Enter your wallet address: ")
 	venuslog.Info(userAddr)

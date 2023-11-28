@@ -22,6 +22,7 @@ import (
 	"btcminerproxy/config"
 	"btcminerproxy/venuslog"
 	"encoding/json"
+	"os"
 
 	"github.com/go-redis/redis"
 )
@@ -33,8 +34,10 @@ var blackList = make(map[string]bool, 100)
 // Connecting to redis server
 func connectRedis() error {
 
+	venuslog.Warn("redis", os.Getenv("REDIS_DB_URL"))
+
 	db = redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
+		Addr:     os.Getenv("REDIS_DB_URL"),
 		Password: "",
 		DB:       0,
 	})
