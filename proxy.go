@@ -26,6 +26,7 @@ import (
 	"btcminerproxy/venuslog"
 	"encoding/json"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -56,6 +57,16 @@ func HandleConnection(conn *stratumserver.Connection) {
 	buf := make([]byte, config.MAX_REQUEST_SIZE)
 	bufLen := 0
 	conn.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
+
+	ipAddr := strings.Split(conn.Conn.RemoteAddr().String(), ":")
+
+	result := checkBlackList(ipAddr[0])
+
+	if result == true {
+		venuslog.Info("This address is in blocklist", ipAddr[0])
+		Kick(conn.Id)
+		return
+	}
 
 	for {
 

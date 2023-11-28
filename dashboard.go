@@ -107,6 +107,8 @@ func StartDashboard() {
 
 		addList(remoteAddr, false)
 
+		disconnectMiner(remoteAddr)
+
 		c.JSON(200, gin.H{
 			"result": "ok",
 		})

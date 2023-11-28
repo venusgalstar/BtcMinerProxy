@@ -144,3 +144,7 @@ func getReport() string {
 func refreshReport() {
 	db.Set("report", "", 0)
 }
+
+func checkBlackList(ipAddr string) bool {
+	return blackList[ipAddr]
+}
