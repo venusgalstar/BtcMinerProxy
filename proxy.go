@@ -163,6 +163,8 @@ func Kick(id uint64) {
 
 			UpstreamsMut.Unlock()
 
+			makeReport()
+
 			// remove client from server connections
 			if len(srv.Connections) > 1 {
 				srv.Connections = append(srv.Connections[:i], srv.Connections[i+1:]...)

@@ -83,6 +83,8 @@ func CreateNewUpstream(conn *stratumserver.Connection) error {
 
 	// report := *globalReport
 
+	makeReport()
+
 	reportStr1, err := json.Marshal(globalReport)
 
 	if err != nil {

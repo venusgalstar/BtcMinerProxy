@@ -114,6 +114,7 @@ func Stats() {
 			time.Sleep(5 * time.Minute)
 
 			getStats()
+			makeReport()
 
 			if len(hrChart) == 288 {
 				hrChart = hrChart[1:]
@@ -129,7 +130,6 @@ func Stats() {
 
 	for {
 		getStats()
-		makeReport()
 		venuslog.Statsf("%s avg, miners: "+venuslog.COLOR_CYAN+"%d"+venuslog.COLOR_WHITE+", upstreams: "+venuslog.COLOR_CYAN+"%d"+venuslog.COLOR_WHITE,
 			venuslog.COLOR_CYAN+formatHashrate(avgHashrate)+"H/s"+venuslog.COLOR_WHITE,
 			numMiners,
@@ -140,6 +140,8 @@ func Stats() {
 }
 
 func makeReport() {
+
+	UpstreamsMut.Lock()
 
 	reportLog = append(reportLog, *globalReport)
 
@@ -188,8 +190,7 @@ func makeReport() {
 		globalReport.Streams.Downstreams = append(globalReport.Streams.Downstreams, *dReport)
 
 	}
-	//Added for report
-
+	UpstreamsMut.Unlock() //Added for report
 }
 
 func getStats() {
