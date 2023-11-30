@@ -206,5 +206,18 @@ func StartDashboard() {
 		})
 	})
 
+	r.GET("/getLastReport", func(c *gin.Context) {
+
+		if len(reportLog) == 0 {
+			c.JSON(200, gin.H{
+				"list": "",
+			})
+		} else {
+			c.JSON(200, gin.H{
+				"list": reportLog[len(reportLog)-1],
+			})
+		}
+	})
+
 	r.Run(fmt.Sprintf("%s:%d", config.CFG.Dashboard.Host, config.CFG.Dashboard.Port))
 }
