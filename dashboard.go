@@ -171,17 +171,20 @@ func StartDashboard() {
 		// 	"pass": "x"
 		// },
 
+		poolName := c.Query("name")
 		poolUrl := c.Query("url")
 		poolTls, _ := strconv.ParseBool(c.Query("tls"))
 		poolUser := c.Query("user")
 		poolPass := c.Query("pass")
 
+		venuslog.Warn("poolUrl", poolName)
 		venuslog.Warn("poolUrl", poolUrl)
 		venuslog.Warn("poolTls", poolTls)
 		venuslog.Warn("poolUser", poolUser)
 		venuslog.Warn("poolPass", poolPass)
 
 		newPool := config.PoolInfo{
+			Name:           poolName,
 			Url:            poolUrl,
 			Tls:            poolTls,
 			TlsFingerprint: "",
@@ -190,6 +193,45 @@ func StartDashboard() {
 		}
 
 		config.CFG.Pools = append(config.CFG.Pools, newPool)
+
+		str, _ := json.Marshal(config.CFG.Pools)
+		venuslog.Warn("newPool", string(str))
+
+		c.JSON(200, gin.H{
+			"list": config.CFG.Pools,
+		})
+	})
+
+	r.GET("/delPool", func(c *gin.Context) {
+
+		poolUrl := c.Query("url")
+		var poolIndex uint64
+
+		poolIndex = 10000
+
+		venuslog.Warn("poolUrl", poolUrl)
+
+		if config.CFG.Pools[config.CFG.PoolIndex].Url == poolUrl {
+			closeAllUpstream()
+			poolIndex = config.CFG.PoolIndex
+		} else {
+
+			for i, pool := range config.CFG.Pools {
+				if pool.Url == poolUrl {
+					poolIndex = uint64(i)
+					break
+				}
+			}
+		}
+
+		if poolIndex == 10000 {
+			c.JSON(200, gin.H{
+				"list": "There is no Pool with that url",
+			})
+			return
+		}
+
+		config.CFG.Pools = append(config.CFG.Pools[:poolIndex], config.CFG.Pools[poolIndex+1:]...)
 
 		str, _ := json.Marshal(config.CFG.Pools)
 		venuslog.Warn("newPool", string(str))

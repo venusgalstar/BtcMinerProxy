@@ -1,12 +1,14 @@
 {
 	"pools": [
 		{
+			"name": "braiinsp1",
 			"url": "stratum.antpool.com:3333",
 			"tls": false,
 			"user": "montyanderson.pc",
 			"pass": "x"
 		},
 		{
+			"name": "nicehashp1",
 			"url": "sha256asicboost.auto.nicehash.com:9200",
 			"tls": false,
 			"user": "36zdfuG8yRU2DjyRUW6jF5abrV1Q6WyYnh",

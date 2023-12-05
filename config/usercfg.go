@@ -27,6 +27,7 @@ import (
 var CFG Config
 
 type PoolInfo struct {
+	Name           string `json:"name"`
 	Url            string `json:"url"`
 	Tls            bool   `json:"tls"`
 	TlsFingerprint string `json:"fingerprint"`
