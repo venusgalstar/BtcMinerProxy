@@ -21,6 +21,7 @@ package venuslog
 import (
 	"btcminerproxy/config"
 	"fmt"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -55,6 +56,8 @@ var COLOR_BG_BLUE = "\x1b[44m"
 var COLOR_BG_MAGENTA = "\x1b[45m"
 var COLOR_BG_CYAN = "\x1b[36m"
 var COLOR_BG_WHITE = "\x1b[47m"
+
+var logFile, err = os.Create("log.txt")
 
 func disableColors() {
 	COLOR_RESET = ""

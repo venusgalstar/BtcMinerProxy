@@ -145,22 +145,15 @@ func StartDashboard() {
 		})
 	})
 
-	r.GET("/setPool", func(c *gin.Context) {
+	// r.GET("/setPool", func(c *gin.Context) {
 
-		poolIndexStr := c.Query("pool")
-		poolIndex, err := strconv.Atoi(poolIndexStr)
+	// 	poolUrlStr := c.Query("pool")
+	// 	minerIpStr := c.Query("miner")
 
-		if err != nil {
-			c.JSON(200, gin.H{
-				"error": err,
-			})
-			return
-		}
-
-		c.JSON(200, gin.H{
-			"list": setPool(uint64(poolIndex)),
-		})
-	})
+	// 	c.JSON(200, gin.H{
+	// 		"list": setPool(uint64(poolIndex)),
+	// 	})
+	// })
 
 	r.GET("/addPool", func(c *gin.Context) {
 

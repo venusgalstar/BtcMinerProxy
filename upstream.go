@@ -26,9 +26,9 @@ import (
 	stratumserver "btcminerproxy/stratum/server"
 	"btcminerproxy/stratum/template"
 	"btcminerproxy/venuslog"
-	"encoding/json"
 	"io"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -52,6 +52,39 @@ var Upstreams = make(map[uint64]*Upstream, 100)
 var UpstreamsMut mutex.Mutex
 var LatestUpstream uint64
 
+func findPoolUrl(minerIp string) (string, uint64) {
+
+	var poolIndex uint64 = 0
+	poolUrl := ""
+
+	for _, miner := range config.CFG.Miner {
+
+		if miner.IP != minerIp {
+			continue
+		}
+
+		poolUrl = miner.PoolUrl
+
+		break
+	}
+
+	if poolUrl == "" {
+		poolUrl = config.CFG.Pools[config.CFG.PoolIndex].Url
+		poolIndex = config.CFG.PoolIndex
+	} else {
+
+		for idx, pool := range config.CFG.Pools {
+			if pool.Url == poolUrl {
+				poolIndex = uint64(idx)
+				break
+			}
+		}
+	}
+
+	return poolUrl, poolIndex
+
+}
+
 // Create new upstream for incomming connection from miner
 func CreateNewUpstream(conn *stratumserver.Connection) error {
 
@@ -62,7 +95,15 @@ func CreateNewUpstream(conn *stratumserver.Connection) error {
 
 	venuslog.Warn("Trying to Upstream ID", newId)
 
-	err := client.Connect(config.CFG.Pools[conn.PoolId].Url, newId)
+	minerIp := strings.Split(conn.Conn.RemoteAddr().String(), ":")[0]
+
+	venuslog.Warn("Trying to Upstream ID", minerIp)
+
+	poolUrl, poolIndex := findPoolUrl(minerIp)
+
+	conn.PoolId = poolIndex
+
+	err := client.Connect(poolUrl, newId)
 
 	if err != nil {
 		venuslog.Warn("Error while sending connecting to pool")
@@ -81,17 +122,7 @@ func CreateNewUpstream(conn *stratumserver.Connection) error {
 
 	UpstreamsMut.Unlock()
 
-	// report := *globalReport
-
 	makeReport()
-
-	reportStr1, err := json.Marshal(globalReport)
-
-	if err != nil {
-		venuslog.Warn("error on json", err)
-	}
-
-	venuslog.Warn("makeReport123", string(reportStr1[:]))
 
 	go handleDownstream(newId)
 
