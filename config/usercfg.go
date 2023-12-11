@@ -35,6 +35,11 @@ type PoolInfo struct {
 	Pass           string `json:"pass"`
 }
 
+type MinerInfo struct {
+	IP      string `json:"ip"`
+	PoolUrl string `json:"poolUrl"`
+}
+
 type Config struct {
 	Pools []PoolInfo `json:"pools"`
 	Bind  []struct {
@@ -42,10 +47,7 @@ type Config struct {
 		Port uint16 `json:"port"`
 		Tls  bool   `json:"tls"`
 	} `json:"bind"`
-	Miner []struct {
-		IP      string `json:"ip"`
-		PoolUrl string `json:"poolUrl"`
-	} `json:"miner"`
+	Miners    []MinerInfo `json:"miner"`
 	Dashboard struct {
 		Enabled bool   `json:"enabled"`
 		Port    uint16 `json:"port"`

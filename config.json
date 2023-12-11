@@ -27,12 +27,6 @@
 			"tls": true
 		}
 	],
-	"miner":[
-		{
-			"ip": "127.0.0.1",
-			"poolUrl": "sha256asicboost.auto.nicehash.com:9200"
-		}
-	],
 	"dashboard": {
 		"enabled": false,
 		"port": 1315,

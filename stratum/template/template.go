@@ -27,10 +27,21 @@ import (
 )
 
 // Stratum Protocol
-
 type StratumMsg struct {
 	ID     uint64 `json:"id"`
 	Method string `json:"method"`
+}
+
+type NotifyMsg struct {
+	ID     uint64   `json:"id"`
+	Method string   `json:"method"`
+	Params []string `json:"params"`
+}
+
+type SubmitMsg struct {
+	ID     uint64   `json:"id"`
+	Method string   `json:"method"`
+	Params []string `json:"params"`
 }
 
 type SubscribeMsg struct {

@@ -57,7 +57,8 @@ var COLOR_BG_MAGENTA = "\x1b[45m"
 var COLOR_BG_CYAN = "\x1b[36m"
 var COLOR_BG_WHITE = "\x1b[47m"
 
-var logFile, err = os.Create("log.txt")
+var logFile *os.File
+var errFile error
 
 func disableColors() {
 	COLOR_RESET = ""
@@ -85,6 +86,13 @@ func StartLogger() {
 	} else {
 		disableColors()
 	}
+
+	logFile, errFile = os.Create("log.txt")
+
+	if errFile != nil {
+		fmt.Print("Can't create log file")
+	}
+
 }
 
 func getCaller() string {
@@ -110,25 +118,37 @@ func Debug(a ...any) {
 		return
 	}
 
+	logFile.WriteString(fmt.Sprintln(a...))
 	fmt.Print(getPrefix() + debug + fmt.Sprintln(a...) + COLOR_RESET)
 }
+
 func Info(a ...any) {
 	fmt.Print(getPrefix() + info + fmt.Sprintln(a...))
+	logFile.WriteString(fmt.Sprintln(a...))
 }
+
 func Warn(a ...any) {
+	logFile.WriteString(fmt.Sprintln(a...))
 	fmt.Print(getPrefix() + warn + fmt.Sprintln(a...))
 }
+
 func Err(a ...any) {
+	logFile.WriteString(fmt.Sprintln(a...))
 	fmt.Print(getPrefix() + err + fmt.Sprintln(a...))
 }
+
 func Fatal(a ...any) {
+	logFile.WriteString(fmt.Sprintln(a...))
 	fmt.Print(getPrefix() + fatal + fmt.Sprintln(a...))
 	panic(fmt.Sprintln(a...))
 }
+
 func Statsf(f string, a ...any) {
+	logFile.WriteString(fmt.Sprintf(f, a...))
 	fmt.Print(getPrefix() + stats + fmt.Sprintf(f, a...) + "\n")
 }
 
 func Printf(s string, a ...any) {
+	logFile.WriteString(fmt.Sprintf(s, a...))
 	fmt.Printf(s, a...)
 }

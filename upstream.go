@@ -28,16 +28,22 @@ import (
 	"btcminerproxy/venuslog"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
+
+type Job struct {
+	Difficulty uint64
+	Status     uint64
+}
 
 type Upstream struct {
 	ID     uint64
 	client *stratumclient.Client
 	server *stratumserver.Connection
 
-	//added for report
+	// added for report
 	Shares struct {
 		Accepted uint64
 		Rejected uint64
@@ -46,6 +52,9 @@ type Upstream struct {
 		Accepted uint64
 		Rejected uint64
 	}
+
+	// checking jobs
+	Jobs map[uint64]*Job
 }
 
 var Upstreams = make(map[uint64]*Upstream, 100)
@@ -57,7 +66,7 @@ func findPoolUrl(minerIp string) (string, uint64) {
 	var poolIndex uint64 = 0
 	poolUrl := ""
 
-	for _, miner := range config.CFG.Miner {
+	for _, miner := range config.CFG.Miners {
 
 		if miner.IP != minerIp {
 			continue
@@ -71,6 +80,13 @@ func findPoolUrl(minerIp string) (string, uint64) {
 	if poolUrl == "" {
 		poolUrl = config.CFG.Pools[config.CFG.PoolIndex].Url
 		poolIndex = config.CFG.PoolIndex
+
+		newMiner := config.MinerInfo{}
+		newMiner.IP = minerIp
+		newMiner.PoolUrl = poolUrl
+
+		config.CFG.Miners = append(config.CFG.Miners, newMiner)
+
 	} else {
 
 		for idx, pool := range config.CFG.Pools {
@@ -241,9 +257,39 @@ func handleDownstream(upstreamId uint64) {
 
 		switch req.Method {
 		case "mining.notify":
+
 			venuslog.Warn("Stratum proxy received job from pool :")
+
+			notifymsg := template.NotifyMsg{}
+			errJson := rpc.ReadJSON(&notifymsg, msg)
+
+			if errJson != nil {
+				venuslog.Warn("ReadJSON failed in proxy from pool:", errJson)
+				return
+			}
+
+			jobId, errUintJob := strconv.ParseUint(notifymsg.Params[0], 10, 0)
+
+			if errUintJob != nil {
+				venuslog.Warn("ReadJSON failed in proxy from pool:", notifymsg.Params[0], errUintJob)
+				return
+			}
+
+			difficulty, errUintDiff := strconv.ParseUint(notifymsg.Params[6], 10, 0)
+
+			if errUintDiff != nil {
+				venuslog.Warn("ReadJSON failed in proxy from pool:", notifymsg.Params[6], errUintDiff)
+				return
+			}
+
+			Upstreams[upstreamId].Jobs[jobId] = &Job{
+				Difficulty: difficulty,
+				Status:     1,
+			}
+
 			Upstreams[upstreamId].Shares.Accepted++
 			Upstreams[upstreamId].server.Shares.Accepted++
+
 		}
 
 		copy(totalBuf, totalBuf[msgLen+1:])

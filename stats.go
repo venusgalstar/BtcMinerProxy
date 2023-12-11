@@ -100,6 +100,13 @@ type Report struct {
 	} `json:"streams"`
 }
 
+type PoolRatedHash struct {
+	Timestamp string `json:"timestamp"`
+	PoolUrl   string `json:"poolUrl"`
+	RatedHash uint64 `json:"ratedHash"`
+}
+
+var globalPoolInfo = make([]PoolRatedHash, 100)
 var globalReport *Report
 var reportLog = make([]Report, 0, 100000)
 var hrChart = make([]Hr, 0, 288)

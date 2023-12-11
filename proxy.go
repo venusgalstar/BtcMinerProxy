@@ -26,6 +26,7 @@ import (
 	"btcminerproxy/venuslog"
 	"encoding/json"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -49,6 +50,34 @@ func StartProxy() {
 			srv.Start(v.Port, v.Host, v.Tls)
 		}
 	}
+}
+
+func updatePoolRatedHash(conn *stratumserver.Connection, jobId uint64) {
+
+	poolUrl := config.CFG.Pools[conn.PoolId].Url
+
+	for idx, pool := range globalPoolInfo {
+
+		if pool.PoolUrl != poolUrl {
+			continue
+		}
+
+		globalPoolInfo[idx].RatedHash += Upstreams[conn.Upstream].Jobs[jobId].Difficulty
+		Upstreams[conn.Upstream].Jobs[jobId].Status = 0
+
+		delete(Upstreams[conn.Upstream].Jobs, jobId)
+		return
+	}
+
+	t := time.Now()
+
+	newPoolInfo := &PoolRatedHash{}
+	newPoolInfo.PoolUrl = poolUrl
+	newPoolInfo.RatedHash = 0
+	newPoolInfo.Timestamp = t.String()
+
+	globalPoolInfo = append(globalPoolInfo, *newPoolInfo)
+
 }
 
 // Handling Upstreaming Message and Data
@@ -133,6 +162,23 @@ func HandleConnection(conn *stratumserver.Connection) {
 			SendConfigure(conn, msg)
 
 		case "mining.submits":
+			submitmsg := template.SubmitMsg{}
+			errJson := rpc.ReadJSON(&submitmsg, msg)
+
+			if errJson != nil {
+				venuslog.Warn("ReadJSON failed in proxy from miner:", errJson)
+				return
+			}
+
+			jobId, errUintJob := strconv.ParseUint(submitmsg.Params[1], 10, 0)
+
+			if errUintJob != nil {
+				venuslog.Warn("ReadJSON failed in proxy from miner:", submitmsg.Params[1], errUintJob)
+				return
+			}
+
+			updatePoolRatedHash(conn, jobId)
+
 			conn.Submits.Accepted++
 			Upstreams[conn.Upstream].Submits.Accepted++
 
