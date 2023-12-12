@@ -7,6 +7,10 @@ Reduces pool connections by up to 256 times, 1000 connected miners become just 4
 ## Download
 https://github.com/venusgalstar/BtcMinerProxy/releases
 
+## Logging
+docker-compose up -d
+docker-compose logs > log.txt
+
 ## Notes
 - If you are using Linux and want to handle more than 1000 connections, you need to [increase the open files limit](ulimit.md)
 - Miners MUST support Nicehash mode.
