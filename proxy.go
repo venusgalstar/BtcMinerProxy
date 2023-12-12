@@ -76,7 +76,7 @@ func updatePoolRatedHash(conn *stratumserver.Connection, jobId uint64) {
 	newPoolInfo.RatedHash = 0
 	newPoolInfo.Timestamp = t.String()
 
-	globalPoolInfo = append(globalPoolInfo, *newPoolInfo)
+	globalPoolInfo = append(globalPoolInfo, newPoolInfo)
 
 }
 

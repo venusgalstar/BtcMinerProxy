@@ -134,6 +134,7 @@ func CreateNewUpstream(conn *stratumserver.Connection) error {
 		client: client,
 		server: conn,
 	}
+	Upstreams[newId].Jobs = make(map[uint64]*Job, 100)
 	conn.Upstream = newId
 
 	UpstreamsMut.Unlock()
@@ -268,24 +269,26 @@ func handleDownstream(upstreamId uint64) {
 				return
 			}
 
-			jobId, errUintJob := strconv.ParseUint(notifymsg.Params[0], 10, 0)
+			jobId, errUintJob := strconv.ParseUint(notifymsg.Params[0].(string), 16, 64)
 
 			if errUintJob != nil {
-				venuslog.Warn("ReadJSON failed in proxy from pool:", notifymsg.Params[0], errUintJob)
+				venuslog.Warn("ReadJSON failed in proxy from pool:", notifymsg.Params[0].(string), errUintJob)
 				return
 			}
 
-			difficulty, errUintDiff := strconv.ParseUint(notifymsg.Params[6], 10, 0)
+			difficulty, errUintDiff := strconv.ParseUint(notifymsg.Params[6].(string), 16, 64)
+
+			venuslog.Warn("ReadJSON Job ID:", difficulty)
 
 			if errUintDiff != nil {
-				venuslog.Warn("ReadJSON failed in proxy from pool:", notifymsg.Params[6], errUintDiff)
+				venuslog.Warn("ReadJSON failed in proxy from pool:", notifymsg.Params[6].(string), errUintDiff)
 				return
 			}
 
-			Upstreams[upstreamId].Jobs[jobId] = &Job{
-				Difficulty: difficulty,
-				Status:     1,
-			}
+			Upstreams[upstreamId].Jobs[jobId] = &Job{}
+
+			Upstreams[upstreamId].Jobs[jobId].Difficulty = difficulty
+			Upstreams[upstreamId].Jobs[jobId].Status = 1
 
 			Upstreams[upstreamId].Shares.Accepted++
 			Upstreams[upstreamId].server.Shares.Accepted++
@@ -353,4 +356,25 @@ func closeAllUpstream() {
 	UpstreamsMut.Unlock()
 
 	venuslog.Warn("Closed All Upstream")
+}
+
+// Closing connections from miner
+func closeAllUpstreamFromMiner(minerIpStr string) {
+
+	UpstreamsMut.Lock()
+
+	for _, us := range Upstreams {
+
+		minerIpOfUpstream := strings.Split(us.server.Conn.RemoteAddr().String(), ":")[0]
+
+		if minerIpOfUpstream != minerIpStr {
+			continue
+		}
+
+		us.Close()
+	}
+
+	UpstreamsMut.Unlock()
+
+	venuslog.Warn("Closed All Upstream From Miner", minerIpStr)
 }

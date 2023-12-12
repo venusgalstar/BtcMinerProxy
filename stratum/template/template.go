@@ -33,9 +33,9 @@ type StratumMsg struct {
 }
 
 type NotifyMsg struct {
-	ID     uint64   `json:"id"`
-	Method string   `json:"method"`
-	Params []string `json:"params"`
+	ID     uint64        `json:"id"`
+	Method string        `json:"method"`
+	Params []interface{} `json:"params"`
 }
 
 type SubmitMsg struct {

@@ -106,7 +106,12 @@ type PoolRatedHash struct {
 	RatedHash uint64 `json:"ratedHash"`
 }
 
-var globalPoolInfo = make([]PoolRatedHash, 100)
+type PoolRatingHash struct {
+	PoolUrl    string `json:"poolUrl"`
+	RatingHash uint64 `json:"ratingHash"`
+}
+
+var globalPoolInfo []*PoolRatedHash
 var globalReport *Report
 var reportLog = make([]Report, 0, 100000)
 var hrChart = make([]Hr, 0, 288)

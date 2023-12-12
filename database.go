@@ -22,6 +22,7 @@ import (
 	"btcminerproxy/config"
 	"btcminerproxy/venuslog"
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/go-redis/redis"
@@ -110,13 +111,64 @@ func getList(isWhite bool) map[string]bool {
 	return blackList
 }
 
-func setPool(poolIdx uint64) string {
+func setPool(poolUrlStr string, minerIpStr string) string {
 
-	closeAllUpstream()
+	var foundPool = -1
+	for idxPool, pool := range config.CFG.Pools {
 
-	config.CFG.PoolIndex = poolIdx
+		if pool.Url == poolUrlStr {
+			foundPool = idxPool
+			break
+		}
+	}
+
+	if foundPool == -1 {
+		return string("Not found pool with url:")
+	}
+
+	var foundMiner = -1
+	for idxMiner, miner := range config.CFG.Miners {
+
+		if miner.IP == minerIpStr {
+			foundMiner = idxMiner
+			break
+		}
+	}
+
+	if foundMiner == -1 {
+		return string("Not found miner with ip:")
+	}
+
+	closeAllUpstreamFromMiner(minerIpStr)
+
+	config.CFG.Miners[foundMiner].PoolUrl = poolUrlStr
 
 	return string("switched pool")
+}
+
+func showPools() string {
+	var globalPoolStatus []*PoolRatingHash
+
+	for _, upstream := range Upstreams {
+
+		var sumRatingHash = uint64(0)
+
+		for _, job := range upstream.Jobs {
+			sumRatingHash += job.Difficulty
+		}
+
+		poolStatus := &PoolRatingHash{}
+		poolStatus.RatingHash = sumRatingHash
+		poolStatus.PoolUrl = config.CFG.Pools[upstream.server.PoolId].Url
+		globalPoolStatus = append(globalPoolStatus, poolStatus)
+	}
+
+	currentStatus, _ := json.Marshal(globalPoolStatus)
+	accStatus, _ := json.Marshal(globalPoolInfo)
+	message := fmt.Sprintf("current:{%s}, total:{%s}", currentStatus, accStatus)
+
+	return message
+
 }
 
 func writeReport(reportStr string) string {
