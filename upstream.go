@@ -205,13 +205,38 @@ func SendData(conn *stratumserver.Connection, data []byte) {
 	}
 }
 
+func CloseUpstream(upstreamId uint64) {
+
+	UpstreamsMut.Lock()
+
+	if Upstreams[upstreamId] == nil {
+		return
+	}
+
+	Upstreams[upstreamId].Close()
+	UpstreamsMut.Unlock()
+}
+
 // Handling downstreaming data from mining pool to miner
 func handleDownstream(upstreamId uint64) {
 
 	cl := Upstreams[upstreamId].client
+
+	if cl == nil {
+		venuslog.Warn("Read failed in proxy from pool socket, it was removed already")
+		CloseUpstream(upstreamId)
+		return
+	}
+
 	totalBuf := make([]byte, config.MAX_REQUEST_SIZE)
 	bufLen := 0
-	cl.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
+	errDeadline := cl.Conn.SetReadDeadline(time.Now().Add(config.READ_TIMEOUT_SECONDS * time.Second))
+
+	if errDeadline != nil {
+		venuslog.Warn("Read failed in proxy from pool socket:", errDeadline)
+		CloseUpstream(upstreamId)
+		return
+	}
 
 	for {
 		msg, msgLen, readLen, err := template.ReadLineFromSocket(cl.Conn, totalBuf, bufLen)
@@ -221,9 +246,7 @@ func handleDownstream(upstreamId uint64) {
 				continue
 			}
 			venuslog.Warn("Read failed in proxy from pool socket:", err)
-			UpstreamsMut.Lock()
-			Upstreams[upstreamId].Close()
-			UpstreamsMut.Unlock()
+			CloseUpstream(upstreamId)
 			return
 		}
 
@@ -239,20 +262,17 @@ func handleDownstream(upstreamId uint64) {
 		errJson := rpc.ReadJSON(&req, msg)
 
 		if errJson != nil {
-			venuslog.Warn("ReadJSON failed in proxy from miner:", errJson)
-			UpstreamsMut.Lock()
-			Upstreams[upstreamId].Close()
-			UpstreamsMut.Unlock()
+			venuslog.Warn("ReadJSON failed in proxy from pool:", errJson)
+			CloseUpstream(upstreamId)
 			return
 		}
 
-		_, nerr := Upstreams[upstreamId].server.Conn.Write(append(msg, '\n'))
+		msg = append(msg, '\n')
+		_, nerr := Upstreams[upstreamId].server.Conn.Write(msg)
 
 		if nerr != nil {
 			venuslog.Warn("err on write ", nerr)
-			UpstreamsMut.Lock()
-			Upstreams[upstreamId].Close()
-			UpstreamsMut.Unlock()
+			CloseUpstream(upstreamId)
 			return
 		}
 
@@ -296,6 +316,7 @@ func handleDownstream(upstreamId uint64) {
 		}
 
 		copy(totalBuf, totalBuf[msgLen+1:])
+		venuslog.Warn("Total Buf Len from upstream", len(totalBuf))
 
 	}
 }
@@ -323,6 +344,7 @@ func disconnectMiner(remoteAddr string) (err error) {
 
 	venuslog.Warn("trying to delete miner", remoteAddr)
 
+	UpstreamsMut.Lock()
 	for _, upstream := range Upstreams {
 
 		venuslog.Warn("Deleted miner", upstream.server.Conn.RemoteAddr().String())
@@ -332,15 +354,13 @@ func disconnectMiner(remoteAddr string) (err error) {
 			continue
 		}
 
-		UpstreamsMut.Lock()
-
 		upstream.Close()
-
-		UpstreamsMut.Unlock()
 
 		venuslog.Warn("Deleted miner", remoteAddr)
 
 	}
+
+	UpstreamsMut.Unlock()
 	return nil
 }
 

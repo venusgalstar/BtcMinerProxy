@@ -91,6 +91,8 @@ func HandleConnection(conn *stratumserver.Connection) {
 
 	result := checkBlackList(ipAddr[0])
 
+	venuslog.Info("This miner address", ipAddr[0])
+
 	if result == true {
 		venuslog.Info("This address is in blocklist", ipAddr[0])
 		Kick(conn.Id)
@@ -112,8 +114,11 @@ func HandleConnection(conn *stratumserver.Connection) {
 			return
 		}
 
-		buf = buf[msgLen+1:]
+		// buf = buf[msgLen+1:]
 		bufLen = bufLen + readLen - msgLen - 1
+
+		str := string(msg[:])
+		venuslog.Warn("data from miner:", str, msgLen, str[0], str[msgLen-1], len(msg))
 
 		errJson := rpc.ReadJSON(&req, msg)
 
@@ -122,9 +127,6 @@ func HandleConnection(conn *stratumserver.Connection) {
 			Kick(conn.Id)
 			return
 		}
-
-		str := string(msg[:])
-		venuslog.Warn("data:", str)
 
 		// Recognizing message type and handling services
 		switch req.Method {
@@ -188,6 +190,7 @@ func HandleConnection(conn *stratumserver.Connection) {
 		}
 
 		copy(buf, buf[msgLen+1:])
+		venuslog.Warn("Total Buf Len from downstream", len(buf))
 	}
 }
 
@@ -195,10 +198,11 @@ func HandleConnection(conn *stratumserver.Connection) {
 func Kick(id uint64) {
 	for i, v := range srv.Connections {
 		if v.Id == id {
-			// Close the connection
-			v.Conn.Close()
 
 			UpstreamsMut.Lock()
+
+			// Close the connection
+			v.Conn.Close()
 
 			if Upstreams[v.Upstream] != nil {
 				// remove client from upstream

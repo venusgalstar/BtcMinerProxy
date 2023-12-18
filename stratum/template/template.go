@@ -113,5 +113,11 @@ func ReadLineFromSocket(conn net.Conn, buf []byte, bufLen int) (line []byte, lin
 	}
 
 	slice := buf[0:firstLine]
+
+	// dst := make([]byte, firstLine+1)
+	// copy(dst, slice)
+
+	venuslog.Warn("data from miner:", firstLine)
+
 	return slice, firstLine, readBytes, nil
 }
