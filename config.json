@@ -8,12 +8,20 @@
 			"pass": "x"
 		},
 		{
+			"name": "brainns",
+			"url": "stratum.braiins.com:3333",
+			"tls": false,
+			"user": "GoBears",
+			"pass": "123"
+		},
+		{
 			"name": "nicehashp1",
 			"url": "sha256asicboost.auto.nicehash.com:9200",
 			"tls": false,
 			"user": "36zdfuG8yRU2DjyRUW6jF5abrV1Q6WyYnh",
 			"pass": "x"
 		}
+		
 	],
 	"bind": [
 		{
