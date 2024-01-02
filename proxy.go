@@ -216,11 +216,19 @@ func Kick(id uint64) {
 			makeReport()
 
 			// remove client from server connections
+			srv.ConnsMut.Lock()
 			if len(srv.Connections) > 1 {
-				srv.Connections = append(srv.Connections[:i], srv.Connections[i+1:]...)
+
+				if i < len(srv.Connections)-1 {
+					srv.Connections = append(srv.Connections[:i], srv.Connections[i+1:]...)
+				} else {
+					srv.Connections = srv.Connections[:i]
+				}
+
 			} else {
 				srv.Connections = make([]*stratumserver.Connection, 0, 100)
 			}
+			srv.ConnsMut.Unlock()
 		}
 	}
 }
